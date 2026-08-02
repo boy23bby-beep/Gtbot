@@ -1,5 +1,5 @@
 // set bash title
-process.stdout.write("\x1b]2;ARIF BOT V1\x1b\x5c");
+process.stdout.write("\x1b]2;Hinata Bot V3\x1b\x5c");
 const defaultRequire = require;
 
 function decode(text) {
@@ -14,8 +14,10 @@ const axios = defaultRequire("axios");
 const path = defaultRequire("path");
 const readline = defaultRequire("readline");
 const fs = defaultRequire("fs-extra");
-// removed: totp-generator, qrcode-reader, canvas (2FA/QR removed)
-const login = defaultRequire("fca-delta");
+const toptp = defaultRequire("totp-generator");
+const login = defaultRequire("mahmud-fca");
+const qr = new (defaultRequire("qrcode-reader"));
+const Canvas = defaultRequire("canvas");
 const https = defaultRequire("https");
 
 async function getName(userID) {
@@ -178,7 +180,21 @@ async function input(prompt, isPassword = false) {
 	}));
 }
 
-// Removed QR/Canvas/totp functions and imports (2FA removed)
+qr.readQrCode = async function (filePath) {
+	const image = await Canvas.loadImage(filePath);
+	const canvas = Canvas.createCanvas(image.width, image.height);
+	const ctx = canvas.getContext("2d");
+	ctx.drawImage(image, 0, 0);
+	const data = ctx.getImageData(0, 0, image.width, image.height);
+	let value;
+	qr.callback = function (error, result) {
+		if (error)
+			throw error;
+		value = result;
+	};
+	qr.decode(data);
+	return value.result;
+};
 
 const { dirAccount } = global.client;
 // const { config, configCommands } = global.GoatBot;
@@ -219,106 +235,118 @@ let changeFbStateByCode = false;
 let latestChangeContentAccount = fs.statSync(dirAccount).mtimeMs;
 let dashBoardIsRunning = false;
 
-/**
- * NOTE:
- * The interactive email/password/2FA login flow & getAppStateFromEmail have been removed.
- * getAppStateToLogin now ONLY reads the dirAccount file (token/cookie/appstate JSON/netscape format).
- */
 
-async function getAppStateToLogin(loginWithEmail) {
-	let appState = [];
-	// We no longer support loginWithEmail (email/password interactive flow removed).
-	// This function only reads dirAccount file and parses token/cookie/json formats.
-	if (!existsSync(dirAccount)) {
-		const error = new Error(`${path.basename(dirAccount)} is not found. Please provide your appstate/cookie/token file at ${dirAccount}`);
-		error.name = "ACCOUNT_ERROR";
-		throw error;
-	}
-	const accountText = readFileSync(dirAccount, "utf8");
-
+async function getAppStateFromEmail(spin = { _start: () => { }, _stop: () => { } }, facebookAccount) {
+	const { email, password, userAgent, proxy } = facebookAccount;
+	const getFbstate = require(process.env.NODE_ENV === 'development' ? "./getFbstate1.dev.js" : "./getFbstate1.js");
+	let code2FATemp;
+	let appState;
 	try {
-		const splitAccountText = accountText.replace(/\|/g, '\n').split('\n').map(i => i.trim()).filter(i => i);
-		// is token full permission
-		if (accountText.startsWith('EAAAA')) {
-			const spin = createOraDots(getText('login', 'loginToken'));
-			spin._start();
-			try {
-				appState = await require('./getFbstate.js')(accountText);
-			}
-			finally {
-				spin._stop();
-			}
+		try {
+			appState = await getFbstate(checkAndTrimString(email), checkAndTrimString(password), userAgent, proxy);
+			spin._stop();
 		}
-		// is cookie string
-		else {
-			if (accountText.match(/^(?:\s*\w+\s*=\s*[^;]*;?)+/)) {
-				const spin = createOraDots(getText('login', 'loginCookieString'));
-				spin._start();
-				appState = accountText.split(';')
-					.map(i => {
-						const [key, value] = i.split('=');
-						return {
-							key: (key || "").trim(),
-							value: (value || "").trim(),
-							domain: "facebook.com",
-							path: "/",
-							hostOnly: true,
-							creation: new Date().toISOString(),
-							lastAccessed: new Date().toISOString()
-						};
-					})
-					.filter(i => i.key && i.value && i.key != "x-referer");
-				spin._stop();
+		catch (err) {
+			if (err.continue) {
+				let tryNumber = 0;
+				let isExit = false;
+
+				await (async function submitCode(message) {
+					if (message && isExit) {
+						spin._stop();
+						log.error("LOGIN FACEBOOK", message);
+						process.exit();
+					}
+
+					if (message) {
+						spin._stop();
+						log.warn("LOGIN FACEBOOK", message);
+					}
+
+					if (facebookAccount["2FASecret"] && tryNumber == 0) {
+						switch (['.png', '.jpg', '.jpeg'].some(i => facebookAccount["2FASecret"].endsWith(i))) {
+							case true:
+								code2FATemp = (await qr.readQrCode(`${process.cwd()}/${facebookAccount["2FASecret"]}`)).replace(/.*secret=(.*)&digits.*/g, '$1');
+								break;
+							case false:
+								code2FATemp = facebookAccount["2FASecret"];
+								break;
+						}
+					}
+					else {
+						spin._stop();
+						code2FATemp = await input("> Enter 2FA code or secret: ");
+						readline.moveCursor(process.stderr, 0, -1);
+						readline.clearScreenDown(process.stderr);
+					}
+
+					const code2FA = isNaN(code2FATemp) ?
+						toptp(
+							code2FATemp.normalize("NFD")
+								.toLowerCase()
+								.replace(/[\u0300-\u036f]/g, "")
+								.replace(/[đ|Đ]/g, (x) => x == "đ" ? "d" : "D")
+								.replace(/\(|\)|\,/g, "")
+								.replace(/ /g, "")
+						) :
+						code2FATemp;
+					spin._start();
+					try {
+						appState = JSON.parse(JSON.stringify(await err.continue(code2FA)));
+						appState = appState.map(item => ({
+							key: item.key,
+							value: item.value,
+							domain: item.domain,
+							path: item.path,
+							hostOnly: item.hostOnly,
+							creation: item.creation,
+							lastAccessed: item.lastAccessed
+						})).filter(item => item.key);
+						spin._stop();
+					}
+					catch (err) {
+						tryNumber++;
+						if (!err.continue)
+							isExit = true;
+						await submitCode(err.message);
+					}
+				})(err.message);
 			}
-			// is netscape cookie
-			else if (isNetScapeCookie(accountText)) {
-				const spin = createOraDots(getText('login', 'loginCookieNetscape'));
-				spin._start();
-				appState = netScapeToCookies(accountText);
-				spin._stop();
-			}
-			else {
-				// is json (cookies or appstate)
-				const spin = createOraDots(getText('login', 'loginCookieArray'));
-				spin._start();
-				try {
-					appState = JSON.parse(accountText);
-				}
-				catch (err) {
-					spin._stop();
-					const error = new Error(`${path.basename(dirAccount)} is invalid`);
-					error.name = "ACCOUNT_ERROR";
-					throw error;
-				}
-				spin._stop();
-				if (appState.some(i => i.name))
-					appState = appState.map(i => {
-						i.key = i.name;
-						delete i.name;
-						return i;
-					});
-				else if (!appState.some(i => i.key)) {
-					const error = new Error(`${path.basename(dirAccount)} is invalid`);
-					error.name = "ACCOUNT_ERROR";
-					throw error;
-				}
-				appState = appState
-					.map(item => ({
-						...item,
-						domain: "facebook.com",
-						path: "/",
-						hostOnly: false,
-						creation: new Date().toISOString(),
-						lastAccessed: new Date().toISOString()
-					}))
-					.filter(i => i.key && i.value && i.key != "x-referer");
-			}
+			else
+				throw err;
 		}
 	}
 	catch (err) {
-		// Stop spinners and rethrow upward for the caller to handle
-		throw err;
+		const loginMbasic = require(process.env.NODE_ENV === 'development' ? "./loginMbasic.dev.js" : "./loginMbasic.js");
+		if (facebookAccount["2FASecret"]) {
+			switch (['.png', '.jpg', '.jpeg'].some(i => facebookAccount["2FASecret"].endsWith(i))) {
+				case true:
+					code2FATemp = (await qr.readQrCode(`${process.cwd()}/${facebookAccount["2FASecret"]}`)).replace(/.*secret=(.*)&digits.*/g, '$1');
+					break;
+				case false:
+					code2FATemp = facebookAccount["2FASecret"];
+					break;
+			}
+		}
+
+		appState = await loginMbasic({
+			email,
+			pass: password,
+			twoFactorSecretOrCode: code2FATemp,
+			userAgent,
+			proxy
+		});
+
+		appState = appState.map(item => {
+			item.key = item.name;
+			delete item.name;
+			return item;
+		});
+		appState = filterKeysAppState(appState);
 	}
+
+	global.GoatBot.config.facebookAccount['2FASecret'] = code2FATemp || "";
+	writeFileSync(global.client.dirConfig, JSON.stringify(global.GoatBot.config, null, 2));
 	return appState;
 }
 
@@ -369,75 +397,211 @@ function pushI_user(appState, value) {
 
 let spin;
 async function getAppStateToLogin(loginWithEmail) {
-	// wrapper not used; Keeping original named function for compatibility
-	return getAppStateToLogin_inner(loginWithEmail);
-}
+	let appState = [];
+	if (loginWithEmail)
+		return await getAppStateFromEmail(undefined, facebookAccount);
+	if (!existsSync(dirAccount))
+		return log.error("LOGIN FACEBOOK", getText('login', 'notFoundDirAccount', colors.green(dirAccount)));
+	const accountText = readFileSync(dirAccount, "utf8");
 
-async function getAppStateToLogin_inner(loginWithEmail) {
-	// Duplicate kept to avoid name collisions in other parts of original code
-	return await (async function () {
-		// original logic moved up; but here call the main function
-		return await (async function main() {
-			// This is placeholder; main logic is in the earlier getAppStateToLogin definition.
-			// For safety, call the earlier implementation by reading file again:
-			let appState = [];
-			if (!existsSync(dirAccount)) {
-				const error = new Error(`${path.basename(dirAccount)} is not found. Please provide your appstate/cookie/token file at ${dirAccount}`);
-				error.name = "ACCOUNT_ERROR";
-				throw error;
-			}
-			const accountText = readFileSync(dirAccount, "utf8");
-
+	try {
+		const splitAccountText = accountText.replace(/\|/g, '\n').split('\n').map(i => i.trim()).filter(i => i);
+		// is token full permission
+		if (accountText.startsWith('EAAAA')) {
 			try {
-				// reuse same parsing logic (simplified)
-				if (accountText.startsWith('EAAAA')) {
-					appState = await require('./getFbstate.js')(accountText);
-				}
-				else if (accountText.match(/^(?:\s*\w+\s*=\s*[^;]*;?)+/)) {
-					appState = accountText.split(';')
-						.map(i => {
-							const [key, value] = i.split('=');
-							return {
-								key: (key || "").trim(),
-								value: (value || "").trim(),
-								domain: "facebook.com",
-								path: "/",
-								hostOnly: true,
-								creation: new Date().toISOString(),
-								lastAccessed: new Date().toISOString()
-							};
-						})
-						.filter(i => i.key && i.value && i.key != "x-referer");
-				}
-				else if (isNetScapeCookie(accountText)) {
-					appState = netScapeToCookies(accountText);
-				}
-				else {
-					appState = JSON.parse(accountText);
-					if (appState.some(i => i.name))
-						appState = appState.map(i => {
-							i.key = i.name;
-							delete i.name;
-							return i;
-						});
-					appState = appState
-						.map(item => ({
-							...item,
-							domain: "facebook.com",
-							path: "/",
-							hostOnly: false,
-							creation: new Date().toISOString(),
-							lastAccessed: new Date().toISOString()
-						}))
-						.filter(i => i.key && i.value && i.key != "x-referer");
-				}
+				spin = createOraDots(getText('login', 'loginToken'));
+				spin._start();
+				appState = await require('./getFbstate.js')(accountText);
 			}
 			catch (err) {
+				err.name = "TOKEN_ERROR";
 				throw err;
 			}
-			return appState;
-		})();
-	})();
+		}
+		// is cookie string
+		else {
+			if (accountText.match(/^(?:\s*\w+\s*=\s*[^;]*;?)+/)) {
+				spin = createOraDots(getText('login', 'loginCookieString'));
+				spin._start();
+				appState = accountText.split(';')
+					.map(i => {
+						const [key, value] = i.split('=');
+						return {
+							key: (key || "").trim(),
+							value: (value || "").trim(),
+							domain: "facebook.com",
+							path: "/",
+							hostOnly: true,
+							creation: new Date().toISOString(),
+							lastAccessed: new Date().toISOString()
+						};
+					})
+					.filter(i => i.key && i.value && i.key != "x-referer");
+			}
+			// is netscape cookie
+			else if (isNetScapeCookie(accountText)) {
+				spin = createOraDots(getText('login', 'loginCookieNetscape'));
+				spin._start();
+				appState = netScapeToCookies(accountText);
+			}
+			else if (
+				(splitAccountText.length == 2 || splitAccountText.length == 3) &&
+				!splitAccountText.slice(0, 2).map(i => i.trim()).some(i => i.includes(' '))
+			) {
+				// bug if account.txt is "[]"
+				global.GoatBot.config.facebookAccount.email = splitAccountText[0]; // bug here=> email is "["
+				global.GoatBot.config.facebookAccount.password = splitAccountText[1]; // bug here=> password is "]"
+				if (splitAccountText[2]) {
+					const code2FATemp = splitAccountText[2].replace(/ /g, "");
+					global.GoatBot.config.facebookAccount['2FASecret'] = code2FATemp;
+				}
+				writeFileSync(global.client.dirConfig, JSON.stringify(global.GoatBot.config, null, 2));
+			}
+			// is json (cookies or appstate)
+			else {
+				try {
+					spin = createOraDots(getText('login', 'loginCookieArray'));
+					spin._start();
+					appState = JSON.parse(accountText);
+				}
+				catch (err) {
+					const error = new Error(`${path.basename(dirAccount)} is invalid`);
+					error.name = "ACCOUNT_ERROR";
+					throw error;
+				}
+				if (appState.some(i => i.name))
+					appState = appState.map(i => {
+						i.key = i.name;
+						delete i.name;
+						return i;
+					});
+				else if (!appState.some(i => i.key)) {
+					const error = new Error(`${path.basename(dirAccount)} is invalid`);
+					error.name = "ACCOUNT_ERROR";
+					throw error;
+				}
+				appState = appState
+					.map(item => ({
+						...item,
+						domain: "facebook.com",
+						path: "/",
+						hostOnly: false,
+						creation: new Date().toISOString(),
+						lastAccessed: new Date().toISOString()
+					}))
+					.filter(i => i.key && i.value && i.key != "x-referer");
+			}
+			//if (!await checkLiveCookie(appState.map(i => i.key + "=" + i.value).join("; "), facebookAccount.userAgent)) {
+				//const error = new Error("Cookie is invalid");
+				//error.name = "COOKIE_INVALID";
+				//throw error;
+			//}
+		}
+	}
+	catch (err) {
+		spin && spin._stop();
+		let {
+			email,
+			password
+		} = facebookAccount;
+		if (err.name === "TOKEN_ERROR")
+			log.err("LOGIN FACEBOOK", getText('login', 'tokenError', colors.green("EAAAA..."), colors.green(dirAccount)));
+		else if (err.name === "COOKIE_INVALID")
+			log.err("LOGIN FACEBOOK", getText('login', 'cookieError'));
+
+		if (!email || !password) {
+			log.warn("LOGIN FACEBOOK", getText('login', 'cannotFindAccount'));
+			const rl = readline.createInterface({
+				input: process.stdin,
+				output: process.stdout
+			});
+			const options = [
+				getText('login', 'chooseAccount'),
+				getText('login', 'chooseToken'),
+				getText('login', 'chooseCookieString'),
+				getText('login', 'chooseCookieArray')
+			];
+			let currentOption = 0;
+			await new Promise((resolve) => {
+				const character = '>';
+				function showOptions() {
+					rl.output.write(`\r${options.map((option, index) => index === currentOption ? colors.blueBright(`${character} (${index + 1}) ${option}`) : `  (${index + 1}) ${option}`).join('\n')}\u001B`);
+					rl.write('\u001B[?25l'); // hides cursor
+				}
+				rl.input.on('keypress', (_, key) => {
+					if (key.name === 'up') {
+						currentOption = (currentOption - 1 + options.length) % options.length;
+					}
+					else if (key.name === 'down') {
+						currentOption = (currentOption + 1) % options.length;
+					}
+					else if (!isNaN(key.name)) {
+						const number = parseInt(key.name);
+						if (number >= 0 && number <= options.length)
+							currentOption = number - 1;
+						process.stdout.write('\033[1D'); // delete the character
+					}
+					else if (key.name === 'enter' || key.name === 'return') {
+						rl.input.removeAllListeners('keypress');
+						rl.close();
+						clearLines(options.length + 1);
+						showOptions();
+						resolve();
+					}
+					else {
+						process.stdout.write('\033[1D'); // delete the character
+					}
+
+					clearLines(options.length);
+					showOptions();
+				});
+				showOptions();
+			});
+
+			rl.write('\u001B[?25h\n'); // show cursor 
+			clearLines(options.length + 1);
+			log.info("LOGIN FACEBOOK", getText('login', 'loginWith', options[currentOption]));
+
+			if (currentOption == 0) {
+				email = await input(`${getText('login', 'inputEmail')} `);
+				password = await input(`${getText('login', 'inputPassword')} `, true);
+				const twoFactorAuth = await input(`${getText('login', 'input2FA')} `);
+				facebookAccount.email = email || '';
+				facebookAccount.password = password || '';
+				facebookAccount['2FASecret'] = twoFactorAuth || '';
+				writeFileSync(global.client.dirConfig, JSON.stringify(global.GoatBot.config, null, 2));
+			}
+			else if (currentOption == 1) {
+				const token = await input(getText('login', 'inputToken') + " ");
+				writeFileSync(global.client.dirAccount, token);
+			}
+			else if (currentOption == 2) {
+				const cookie = await input(getText('login', 'inputCookieString') + " ");
+				writeFileSync(global.client.dirAccount, cookie);
+			}
+			else {
+				const cookie = await input(getText('login', 'inputCookieArray') + " ");
+				writeFileSync(global.client.dirAccount, JSON.stringify(JSON.parse(cookie), null, 2));
+			}
+			return await getAppStateToLogin();
+		}
+
+		log.info("LOGIN FACEBOOK", getText('login', 'loginPassword'));
+		log.info("ACCOUNT INFO", `Email: ${facebookAccount.email}, I_User: ${facebookAccount.i_user || "(empty)"}`);
+		spin = createOraDots(getText('login', 'loginPassword'));
+		spin._start();
+
+		try {
+			appState = await getAppStateFromEmail(spin, facebookAccount);
+			spin._stop();
+		}
+		catch (err) {
+			spin._stop();
+			log.err("LOGIN FACEBOOK", getText('login', 'loginError'), err.message, err);
+			process.exit();
+		}
+	}
+	return appState;
 }
 
 function stopListening(keyListen) {
@@ -463,7 +627,7 @@ async function startBot(loginWithEmail) {
 	console.log(colors.hex("#f5ab00")(createLine("START LOGGING IN", true)));
 	const currentVersion = require("../../package.json").version;
 	const tooOldVersion = (await axios.get("https://raw.githubusercontent.com/ntkhang03/Goat-Bot-V2-Storage/main/tooOldVersions.txt")).data || "0.0.0";
-	// nếu version cোল্ড্র
+	// nếu version cũ hơn
 	if ([-1, 0].includes(compareVersion(currentVersion, tooOldVersion))) {
 		log.err("VERSION", getText('version', 'tooOldVersion', colors.yellowBright('node update')));
 		process.exit();
@@ -475,8 +639,7 @@ async function startBot(loginWithEmail) {
 
 	log.info("LOGIN FACEBOOK", getText('login', 'currentlyLogged'));
 
-	// Now only read appState from dirAccount (no interactive email/password)
-	let appState = await getAppStateToLogin(false);
+	let appState = await getAppStateToLogin(loginWithEmail);
 	changeFbStateByCode = true;
 	appState = filterKeysAppState(appState);
 	writeFileSync(dirAccount, JSON.stringify(appState, null, 2));
@@ -499,25 +662,21 @@ async function startBot(loginWithEmail) {
 		let isSendNotiErrorMessage = false;
 
 		login({ appState }, global.GoatBot.config.optionsFca, async function (error, api) {
-			if (!isNaN(facebookAccount.intervalGetNewCookie) && facebookAccount.intervalGetNewCookie > 0) {
-				// email/password based refresh removed — instead, we will re-read dirAccount periodically
-				spin?._stop();
-				if (!facebookAccount.email || !facebookAccount.password) {
-					log.warn("REFRESH COOKIE", getText('login', 'refreshCookieWarning'));
-				}
-				// set periodic refresh that reads dirAccount again
-				if (facebookAccount.intervalGetNewCookie > 0) {
+			if (!isNaN(facebookAccount.intervalGetNewCookie) && facebookAccount.intervalGetNewCookie > 0)
+				if (facebookAccount.email && facebookAccount.password) {
+					spin?._stop();
+					log.info("REFRESH COOKIE", getText('login', 'refreshCookieAfter', convertTime(facebookAccount.intervalGetNewCookie * 60 * 1000, true)));
 					setTimeout(async function refreshCookie() {
 						try {
 							log.info("REFRESH COOKIE", getText('login', 'refreshCookie'));
-							const newAppState = await getAppStateToLogin(false);
+							const appState = await getAppStateFromEmail(undefined, facebookAccount);
 							if (facebookAccount.i_user)
-								pushI_user(newAppState, facebookAccount.i_user);
+								pushI_user(appState, facebookAccount.i_user);
 							changeFbStateByCode = true;
-							writeFileSync(dirAccount, JSON.stringify(filterKeysAppState(newAppState), null, 2));
+							writeFileSync(dirAccount, JSON.stringify(filterKeysAppState(appState), null, 2));
 							setTimeout(() => changeFbStateByCode = false, 1000);
 							log.info("REFRESH COOKIE", getText('login', 'refreshCookieSuccess'));
-							return startBot();
+							return startBot(appState);
 						}
 						catch (err) {
 							log.err("REFRESH COOKIE", getText('login', 'refreshCookieError'), err.message, err);
@@ -525,14 +684,20 @@ async function startBot(loginWithEmail) {
 						}
 					}, facebookAccount.intervalGetNewCookie * 60 * 1000);
 				}
-			}
+				else {
+					spin?._stop();
+					log.warn("REFRESH COOKIE", getText('login', 'refreshCookieWarning'));
+				}
 			spin ? spin._stop() : null;
 
 			// Handle error
 			if (error) {
 				log.err("LOGIN FACEBOOK", getText('login', 'loginError'), error);
 				global.statusAccountBot = 'can\'t login';
-				// Without email/password fallbacks, we cannot attempt interactive relogin here.
+				if (facebookAccount.email && facebookAccount.password) {
+					return startBot(true);
+				}
+				// —————————— CHECK DASHBOARD —————————— //
 				if (global.GoatBot.config.dashBoard?.enable == true) {
 					try {
 						await require("../../dashboard/app.js")(null);
@@ -560,9 +725,419 @@ async function startBot(loginWithEmail) {
 			log.info("PREFIX", global.GoatBot.config.prefix);
 			log.info("LANGUAGE", global.GoatBot.config.language);
 			log.info("BOT NICK NAME", global.GoatBot.config.nickNameBot || "GOAT BOT");
-			// ———————————————————————————————————————— rest of original code unchanged ———————————————————————————————————————— //
-			// ... (kept all of the remaining code from original loginBot handler unchanged)
-			// For brevity this snippet omits unchanged parts; in your real file retain the remainder of the original code as-is.
+			// ———————————————————— GBAN ————————————————————— //
+			let dataGban;
+
+			try {
+				// convert to promise
+				const item = await axios.get("https://raw.githubusercontent.com/ntkhang03/Goat-Bot-V2-Gban/master/gban.json");
+				dataGban = item.data;
+
+				// ————————————————— CHECK BOT ————————————————— //
+				const botID = api.getCurrentUserID();
+				if (dataGban.hasOwnProperty(botID)) {
+					if (!dataGban[botID].toDate) {
+						log.err('GBAN', getText('login', 'gbanMessage', dataGban[botID].date, dataGban[botID].reason, dataGban[botID].date));
+						hasBanned = true;
+					}
+					else {
+						const currentDate = (new Date((await axios.get("http://worldtimeapi.org/api/timezone/UTC")).data.utc_datetime)).getTime();
+						if (currentDate < (new Date(dataGban[botID].date)).getTime()) {
+							log.err('GBAN', getText('login', 'gbanMessage', dataGban[botID].date, dataGban[botID].reason, dataGban[botID].date, dataGban[botID].toDate));
+							hasBanned = true;
+						}
+					}
+				}
+				// ———————————————— CHECK ADMIN ———————————————— //
+				for (const idad of global.GoatBot.config.adminBot) {
+					if (dataGban.hasOwnProperty(idad)) {
+						if (!dataGban[idad].toDate) {
+							log.err('GBAN', getText('login', 'gbanMessage', dataGban[idad].date, dataGban[idad].reason, dataGban[idad].date));
+							hasBanned = true;
+						}
+						else {
+							const currentDate = (new Date((await axios.get("http://worldtimeapi.org/api/timezone/UTC")).data.utc_datetime)).getTime();
+							if (currentDate < (new Date(dataGban[idad].date)).getTime()) {
+								log.err('GBAN', getText('login', 'gbanMessage', dataGban[idad].date, dataGban[idad].reason, dataGban[idad].date, dataGban[idad].toDate));
+								hasBanned = true;
+							}
+						}
+					}
+				}
+				if (hasBanned == true)
+					process.exit();
+			}
+			catch (e) {
+				console.log(e);
+				log.err('GBAN', getText('login', 'checkGbanError'));
+				process.exit();
+			}
+			// ———————————————— NOTIFICATIONS ———————————————— //
+			let notification;
+			try {
+				const getNoti = await axios.get("https://raw.githubusercontent.com/ntkhang03/Goat-Bot-V2-Gban/master/notification.txt");
+				notification = getNoti.data;
+			}
+			catch (err) {
+				log.err("ERROR", "Can't get notifications data");
+				process.exit();
+			}
+			if (global.GoatBot.config.autoRefreshFbstate == true) {
+				changeFbStateByCode = true;
+				try {
+					writeFileSync(dirAccount, JSON.stringify(filterKeysAppState(api.getAppState()), null, 2));
+					log.info("REFRESH FBSTATE", getText('login', 'refreshFbstateSuccess', path.basename(dirAccount)));
+				}
+				catch (err) {
+					log.warn("REFRESH FBSTATE", getText('login', 'refreshFbstateError', path.basename(dirAccount)), err);
+				}
+				setTimeout(() => changeFbStateByCode = false, 1000);
+			}
+			if (hasBanned == true) {
+				log.err('GBAN', getText('login', 'youAreBanned'));
+				process.exit();
+			}
+			// ——————————————————— LOAD DATA ——————————————————— //
+			const { threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData, sequelize } = await require(process.env.NODE_ENV === 'development' ? "./loadData.dev.js" : "./loadData.js")(api, createLine);
+			// ————————————————— CUSTOM SCRIPTS ————————————————— //
+			await require("../custom.js")({ api, threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData, getText });
+			// —————————————————— LOAD SCRIPTS —————————————————— //
+			await require(process.env.NODE_ENV === 'development' ? "./loadScripts.dev.js" : "./loadScripts.js")(api, threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData, createLine);
+			// ———————————— CHECK AUTO LOAD SCRIPTS ———————————— //
+			if (global.GoatBot.config.autoLoadScripts?.enable == true) {
+				const ignoreCmds = global.GoatBot.config.autoLoadScripts.ignoreCmds?.replace(/[ ,]+/g, ' ').trim().split(' ') || [];
+				const ignoreEvents = global.GoatBot.config.autoLoadScripts.ignoreEvents?.replace(/[ ,]+/g, ' ').trim().split(' ') || [];
+
+				watch(`${process.cwd()}/scripts/cmds`, async (event, filename) => {
+					if (filename.endsWith('.js')) {
+						if (ignoreCmds.includes(filename) || filename.endsWith('.eg.js'))
+							return;
+						if ((event == 'change' || event == 'rename') && existsSync(`${process.cwd()}/scripts/cmds/${filename}`)) {
+							try {
+								const contentCommand = global.temp.contentScripts.cmds[filename] || "";
+								const currentContent = readFileSync(`${process.cwd()}/scripts/cmds/${filename}`, 'utf-8');
+								if (contentCommand == currentContent)
+									return;
+								global.temp.contentScripts.cmds[filename] = currentContent;
+								filename = filename.replace('.js', '');
+
+								const infoLoad = global.utils.loadScripts("cmds", filename, log, global.GoatBot.configCommands, api, threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData);
+								if (infoLoad.status == "success")
+									log.master("AUTO LOAD SCRIPTS", `Command ${filename}.js (${infoLoad.command.config.name}) has been reloaded`);
+								else
+									log.err("AUTO LOAD SCRIPTS", `Error when reload command ${filename}.js`, infoLoad.error);
+							}
+							catch (err) {
+								log.err("AUTO LOAD SCRIPTS", `Error when reload command ${filename}.js`, err);
+							}
+						}
+					}
+				});
+
+				watch(`${process.cwd()}/scripts/events`, async (event, filename) => {
+					if (filename.endsWith('.js')) {
+						if (ignoreEvents.includes(filename) || filename.endsWith('.eg.js'))
+							return;
+						if ((event == 'change' || event == 'rename') && existsSync(`${process.cwd()}/scripts/events/${filename}`)) {
+							try {
+								const contentEvent = global.temp.contentScripts.events[filename] || "";
+								const currentContent = readFileSync(`${process.cwd()}/scripts/events/${filename}`, 'utf-8');
+								if (contentEvent == currentContent)
+									return;
+								global.temp.contentScripts.events[filename] = currentContent;
+								filename = filename.replace('.js', '');
+
+								const infoLoad = global.utils.loadScripts("events", filename, log, global.GoatBot.configCommands, api, threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData);
+								if (infoLoad.status == "success")
+									log.master("AUTO LOAD SCRIPTS", `Event ${filename}.js (${infoLoad.command.config.name}) has been reloaded`);
+								else
+									log.err("AUTO LOAD SCRIPTS", `Error when reload event ${filename}.js`, infoLoad.error);
+							}
+							catch (err) {
+								log.err("AUTO LOAD SCRIPTS", `Error when reload event ${filename}.js`, err);
+							}
+						}
+					}
+				});
+			}
+			// ——————————————————— DASHBOARD ——————————————————— //
+			if (global.GoatBot.config.dashBoard?.enable == true && dashBoardIsRunning == false) {
+				logColor('#f5ab00', createLine('DASHBOARD'));
+				try {
+					await require("../../dashboard/app.js")(api);
+					log.info("DASHBOARD", getText('login', 'openDashboardSuccess'));
+					dashBoardIsRunning = true;
+				}
+				catch (err) {
+					log.err("DASHBOARD", getText('login', 'openDashboardError'), err);
+				}
+			}
+			// ———————————————————— ADMIN BOT ———————————————————— //
+			logColor('#f5ab00', character);
+			let i = 0;
+			const adminBot = global.GoatBot.config.adminBot
+				.filter(item => !isNaN(item))
+				.map(item => item = item.toString());
+			for (const uid of adminBot) {
+				try {
+					const userName = await usersData.getName(uid);
+					log.master("ADMINBOT", `[${++i}] ${uid} | ${userName}`);
+				}
+				catch (e) {
+					log.master("ADMINBOT", `[${++i}] ${uid}`);
+				}
+			}
+			log.master("NOTIFICATION", (notification || "").trim());
+			log.master("SUCCESS", getText('login', 'runBot'));
+			log.master("LOAD TIME", `${convertTime(Date.now() - global.GoatBot.startTime)}`);
+			logColor("#f5ab00", createLine("COPYRIGHT"));
+			// —————————————————— COPYRIGHT INFO —————————————————— //
+			// console.log(`\x1b[1m\x1b[33mCOPYRIGHT:\x1b[0m\x1b[1m\x1b[37m \x1b[0m\x1b[1m\x1b[36mProject GoatBot v2 created by ntkhang03 (https://github.com/ntkhang03), please do not sell this source code or claim it as your own. Thank you!\x1b[0m`);
+			console.log(`\x1b[1m\x1b[33m${("COPYRIGHT:")}\x1b[0m\x1b[1m\x1b[37m \x1b[0m\x1b[1m\x1b[36m${("Project GoatBot v2 created by ntkhang03 (https://github.com/ntkhang03), please do not sell this source code or claim it as your own. Thank you!")}\x1b[0m`);
+			logColor("#f5ab00", character);
+			global.GoatBot.config.adminBot = adminBot;
+			writeFileSync(global.client.dirConfig, JSON.stringify(global.GoatBot.config, null, 2));
+			writeFileSync(global.client.dirConfigCommands, JSON.stringify(global.GoatBot.configCommands, null, 2));
+
+			// ——————————————————————————————————————————————————— //
+			const { restartListenMqtt } = global.GoatBot.config;
+			let intervalCheckLiveCookieAndRelogin = false;
+			// —————————————————— CALLBACK LISTEN —————————————————— //
+			async function callBackListen(error, event) {
+				if (error) {
+					global.responseUptimeCurrent = responseUptimeError;
+					if (
+						error.error == "Not logged in" ||
+						error.error == "Not logged in." ||
+						error.error == "Connection refused: Server unavailable"
+					) {
+						log.err("NOT LOGGEG IN", getText('login', 'notLoggedIn'), error);
+						global.responseUptimeCurrent = responseUptimeError;
+						global.statusAccountBot = 'can\'t login';
+						if (!isSendNotiErrorMessage) {
+							await handlerWhenListenHasError({ api, threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData, error });
+							isSendNotiErrorMessage = true;
+						}
+
+						if (global.GoatBot.config.autoRestartWhenListenMqttError)
+							process.exit(2);
+						else {
+							// log.dev("ACCOUNT LOCKED, start relogin...");
+							// await stopListening();
+							// log.dev("STOP LISTENING SUCCESS");
+							const keyListen = Object.keys(callbackListenTime).pop();
+							if (callbackListenTime[keyListen])
+								callbackListenTime[keyListen] = () => { };
+							const cookieString = appState.map(i => i.key + "=" + i.value).join("; ");
+							// log.dev("GET COOKIE SUCCESS");
+							// log.dev(cookieString);
+
+							let times = 5;
+
+							const spin = createOraDots(getText('login', 'retryCheckLiveCookie', times));
+							const countTimes = setInterval(() => {
+								times--;
+								if (times == 0)
+									times = 5;
+								spin.text = getText('login', 'retryCheckLiveCookie', times);
+							}, 1000);
+
+							if (intervalCheckLiveCookieAndRelogin == false) {
+								intervalCheckLiveCookieAndRelogin = true;
+								const interval = setInterval(async () => {
+									const cookieIsLive = await checkLiveCookie(cookieString, facebookAccount.userAgent);
+									if (cookieIsLive) {
+										clearInterval(interval);
+										clearInterval(countTimes);
+										intervalCheckLiveCookieAndRelogin = false;
+										const keyListen = Date.now();
+										isSendNotiErrorMessage = false;
+										global.GoatBot.Listening = api.listenMqtt(createCallBackListen(keyListen));
+									}
+								}, 5000);
+							}
+						}
+						return;
+					}
+					else if (error == "Connection closed." || error == "Connection closed by user.") /* by stopListening; */ {
+						return;
+					}
+					else {
+						await handlerWhenListenHasError({ api, threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData, error });
+						return log.err("LISTEN_MQTT", getText('login', 'callBackError'), error);
+					}
+				}
+				global.responseUptimeCurrent = responseUptimeSuccess;
+				global.statusAccountBot = 'good';
+				const configLog = global.GoatBot.config.logEvents;
+				if (isSendNotiErrorMessage == true)
+					isSendNotiErrorMessage = false;
+
+				// "whiteListMode": {
+				// 	"enable": false,
+				// 	"whiteListIds": [],
+				// 	"notes": "if you enable this feature, only the ids in the whiteListIds list can use the bot"
+				// },
+				// "whiteListModeThread": {
+				// 	"enable": false,
+				// 	"whiteListThreadIds": [],
+				// 	"notes": "if you enable this feature, only the thread in the whiteListThreadIds list can use the bot",
+				// 	"how_it_work": "if you enable both whiteListMode and whiteListModeThread, the system will check if the user is in whiteListIds, then check if the thread is in whiteListThreadIds, if one of the conditions is true, the user can use the bot"
+				// },
+
+				// "if you enable both whiteListMode and whiteListModeThread, the system will check if the user is in whiteListIds, then check if the thread is in whiteListThreadIds, if one of the conditions is true, the user can use the bot"
+				// const whitelistMode = config.whiteListMode?.enable === true;
+				// const whitelistModeThread = config.whiteListModeThread?.enable === true;
+				// const isWhitelistedSender = config.whiteListMode?.whiteListIds.includes(event.senderID);
+				// const isWhitelistedThread = config.whiteListModeThread?.whiteListThreadIds.includes(event.threadID);
+
+				// if (
+				// 	(whitelistMode && whitelistModeThread && !isWhitelistedSender && !isWhitelistedThread) ||
+				// 	(whitelistMode && !isWhitelistedSender) ||
+				// 	(whitelistModeThread && !isWhitelistedThread)
+				// ) {
+				// 	return;
+				// }
+
+				if (
+					global.GoatBot.config.whiteListMode?.enable == true
+					&& global.GoatBot.config.whiteListModeThread?.enable == true
+					// admin
+					&& !global.GoatBot.config.adminBot.includes(event.senderID)
+				) {
+					if (
+						!global.GoatBot.config.whiteListMode.whiteListIds.includes(event.senderID)
+						&& !global.GoatBot.config.whiteListModeThread.whiteListThreadIds.includes(event.threadID)
+						// admin
+						&& !global.GoatBot.config.adminBot.includes(event.senderID)
+					)
+						return;
+				}
+				else if (
+					global.GoatBot.config.whiteListMode?.enable == true
+					&& !global.GoatBot.config.whiteListMode.whiteListIds.includes(event.senderID)
+					// admin
+					&& !global.GoatBot.config.adminBot.includes(event.senderID)
+				)
+					return;
+				else if (
+					global.GoatBot.config.whiteListModeThread?.enable == true
+					&& !global.GoatBot.config.whiteListModeThread.whiteListThreadIds.includes(event.threadID)
+					// admin
+					&& !global.GoatBot.config.adminBot.includes(event.senderID)
+				)
+					return;
+
+				// check if listenMqtt loop
+				if (event.messageID && event.type == "message") {
+					if (storage5Message.includes(event.messageID))
+						Object.keys(callbackListenTime).slice(0, -1).forEach(key => {
+							callbackListenTime[key] = () => { };
+						});
+					else
+						storage5Message.push(event.messageID);
+					if (storage5Message.length > 5)
+						storage5Message.shift();
+				}
+
+				if (configLog.disableAll === false && configLog[event.type] !== false) {
+					// hide participantIDs (it is array too long)
+					const participantIDs_ = [...event.participantIDs || []];
+					if (event.participantIDs)
+						event.participantIDs = 'Array(' + event.participantIDs.length + ')';
+
+					console.log(colors.green((event.type || "").toUpperCase() + ":"), jsonStringifyColor(event, null, 2));
+
+					if (event.participantIDs)
+						event.participantIDs = participantIDs_;
+				}
+
+				if ((event.senderID && dataGban[event.senderID] || event.userID && dataGban[event.userID])) {
+					if (event.body && event.threadID) {
+						const prefix = getPrefix(event.threadID);
+						if (event.body.startsWith(prefix))
+							return api.sendMessage(getText('login', 'userBanned'), event.threadID);
+						return;
+					}
+					else
+						return;
+				}
+
+				const handlerAction = require("../handler/handlerAction.js")(api, threadModel, userModel, dashBoardModel, globalModel, usersData, threadsData, dashBoardData, globalData);
+
+				if (hasBanned === false)
+					handlerAction(event);
+				else
+					return log.err('GBAN', getText('login', 'youAreBanned'));
+			}
+			// ————————————————— CREATE CALLBACK ————————————————— //
+			function createCallBackListen(key) {
+				key = randomString(10) + (key || Date.now());
+				callbackListenTime[key] = callBackListen;
+				return function (error, event) {
+					callbackListenTime[key](error, event);
+				};
+			}
+			// ———————————————————— START BOT ———————————————————— //
+			await stopListening();
+			global.GoatBot.Listening = api.listenMqtt(createCallBackListen());
+			global.GoatBot.callBackListen = callBackListen;
+			// ——————————————————— UPTIME ——————————————————— //
+			if (global.GoatBot.config.serverUptime.enable == true && !global.GoatBot.config.dashBoard?.enable && !global.serverUptimeRunning) {
+				const http = require('http');
+				const express = require('express');
+				const app = express();
+				const server = http.createServer(app);
+				const { data: html } = await axios.get("https://raw.githubusercontent.com/ntkhang03/resources-goat-bot/master/homepage/home.html");
+				const PORT = global.GoatBot.config.dashBoard?.port || (!isNaN(global.GoatBot.config.serverUptime.port) && global.GoatBot.config.serverUptime.port) || 3001;
+				app.get('/', (req, res) => res.send(html));
+				app.get('/uptime', global.responseUptimeCurrent);
+				let nameUpTime;
+				try {
+					nameUpTime = `https://${process.env.REPL_OWNER ?
+						`${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` :
+						process.env.API_SERVER_EXTERNAL == "https://api.glitch.com" ?
+							`${process.env.PROJECT_DOMAIN}.glitch.me` :
+							`localhost:${PORT}`}`;
+					nameUpTime.includes('localhost') && (nameUpTime = nameUpTime.replace('https', 'http'));
+					await server.listen(PORT);
+					log.info("UPTIME", getText('login', 'openServerUptimeSuccess', nameUpTime));
+					if (global.GoatBot.config.serverUptime.socket?.enable == true)
+						require('./socketIO.js')(server);
+					global.serverUptimeRunning = true;
+				}
+				catch (err) {
+					log.err("UPTIME", getText('login', 'openServerUptimeError'), err);
+				}
+			}
+
+
+			// ———————————————————— RESTART LISTEN ———————————————————— //
+			if (restartListenMqtt.enable == true) {
+				if (restartListenMqtt.logNoti == true) {
+					log.info("LISTEN_MQTT", getText('login', 'restartListenMessage', convertTime(restartListenMqtt.timeRestart, true)));
+					log.info("BOT_STARTED", getText('login', 'startBotSuccess'));
+
+					logColor("#f5ab00", character);
+				}
+				const restart = setInterval(async function () {
+					if (restartListenMqtt.enable == false) {
+						clearInterval(restart);
+						return log.warn("LISTEN_MQTT", getText('login', 'stopRestartListenMessage'));
+					}
+					try {
+						await stopListening();
+						await sleep(1000);
+						global.GoatBot.Listening = api.listenMqtt(createCallBackListen());
+						log.info("LISTEN_MQTT", getText('login', 'restartListenMessage2'));
+					}
+					catch (e) {
+						log.err("LISTEN_MQTT", getText('login', 'restartListenMessageError'), e);
+					}
+				}, restartListenMqtt.timeRestart);
+				global.intervalRestartListenMqtt = restart;
+			}
+			require('../autoUptime.js');
 		});
 	})(appState);
 
@@ -572,7 +1147,9 @@ async function startBot(loginWithEmail) {
 				if (type == 'change' && changeFbStateByCode == false && latestChangeContentAccount != fs.statSync(dirAccount).mtimeMs) {
 					clearInterval(global.intervalRestartListenMqtt);
 					global.compulsoryStopLisening = true;
+					// await stopListening();
 					latestChangeContentAccount = fs.statSync(dirAccount).mtimeMs;
+					// process.exit(2);
 					startBot();
 				}
 			});
