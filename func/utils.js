@@ -29,14 +29,14 @@ if (!clientSecret) {
 if (!refreshToken) {
 	log.err("CREDENTIALS", `Please provide a valid refreshToken in file ${path.normalize(global.client.dirConfig)}`);
 	process.exit();
-}*/
+}
 
 const oauth2ClientForGGDrive = new google.auth.OAuth2(clientId, clientSecret, "https://developers.google.com/oauthplayground");
 oauth2ClientForGGDrive.setCredentials({ refresh_token: refreshToken });
 const driveApi = google.drive({
 	version: 'v3',
 	auth: oauth2ClientForGGDrive
-});
+});*/
 const word = [
 	'A', 'Á', 'À', 'Ả', 'Ã', 'Ạ', 'a', 'á', 'à', 'ả', 'ã', 'ạ',
 	'Ă', 'Ắ', 'Ằ', 'Ẳ', 'Ẵ', 'Ặ', 'ă', 'ắ', 'ằ', 'ẳ', 'ẵ', 'ặ',
