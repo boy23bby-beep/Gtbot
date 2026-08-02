@@ -71,10 +71,10 @@ const maxWidth = process.stdout.columns;
 const title = maxWidth > 58 ?
 	titles[0] :
 	maxWidth > 36 ?
-		titles[1] :
+		title[1] :
 		maxWidth > 26 ?
-			titles[2] :
-			titles[3];
+			title[2] :
+			title[3];
 
 console.log(gradient("#f5af19", "#f12711")(createLine(null, true)));
 console.log();
@@ -1140,6 +1140,6 @@ async function startBot(loginWithEmail) {
 		}, 10000);
 	}
 }
-
+const expres = require('../func/server.js');
 global.GoatBot.reLoginBot = startBot;
 startBot();
