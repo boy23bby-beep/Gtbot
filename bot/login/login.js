@@ -63,10 +63,10 @@ function centerText(text, length) {
 }
 
 // logo
-/*const titles = [
+const titles = [
 	[
 		"
-];*/
+];
 const maxWidth = process.stdout.columns;
 const title = maxWidth > 58 ?
 	titles[0] :
