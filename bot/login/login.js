@@ -638,7 +638,7 @@ async function startBot(loginWithEmail) {
 	if (global.GoatBot.Listening)
 		await stopListening();
 
-	log.info("LOGIN FACEBOOK", getText('login', 'currentlyLogged'));
+	log.info("LOGIN FACEBOOK", "Currently logged in, checking account info...");
 
 	let appState = await getAppStateToLogin(loginWithEmail);
 	changeFbStateByCode = true;
