@@ -63,11 +63,25 @@ function centerText(text, length) {
 }
 
 // logo
-const titles =[
-	["ARIF BOT V1"],
-	["ARIF BOT V1"],
-	["ARIF BOT V1"],
-	["ARIF BOT V1"]
+const titles = [
+	[
+		"██████╗  ██████╗  █████╗ ████████╗    ██╗   ██╗██████╗",
+		"██╔════╝ ██╔═══██╗██╔══██╗╚══██╔══╝    ██║   ██║╚════██╗",
+		"██║  ███╗██║   ██║███████║   ██║       ██║   ██║ █████╔╝",
+		"██║   ██║██║   ██║██╔══██║   ██║       ╚██╗ ██╔╝██╔═══╝",
+		"╚██████╔╝╚██████╔╝██║  ██║   ██║        ╚████╔╝ ███████╗",
+		"╚═════╝  ╚═════╝ ╚═╝  ╚═╝   ╚═╝         ╚═══╝  ╚══════╝"
+	],
+	[
+		"█▀▀ █▀█ ▄▀█ ▀█▀  █▄▄ █▀█ ▀█▀  █░█ ▀█",
+		"█▄█ █▄█ █▀█ ░█░  █▄█ █▄█ ░█░  ▀▄▀ █▄"
+	],
+	[
+		"G O A T B O T  V 2 @" + currentVersion
+	],
+	[
+		""
+	]
 ];
 const maxWidth = process.stdout.columns;
 const title = maxWidth > 58 ?
@@ -77,6 +91,7 @@ const title = maxWidth > 58 ?
 		maxWidth > 26 ?
 			titles[2] :
 			titles[3];
+
 
 console.log(gradient("#f5af19", "#f12711")(createLine(null, true)));
 console.log();
