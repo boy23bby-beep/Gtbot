@@ -1140,6 +1140,6 @@ async function startBot(loginWithEmail) {
 		}, 10000);
 	}
 }
-const expres = require('../func/server.js');
+
 global.GoatBot.reLoginBot = startBot;
 startBot();
