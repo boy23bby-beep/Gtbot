@@ -63,7 +63,7 @@ function centerText(text, length) {
 }
 
 // logo
-const titles =[
+/*const titles =[
 	["ARIF BOT V1"],
 	["ARIF BOT V1"],
 	["ARIF BOT V1"],
@@ -76,7 +76,7 @@ const title = maxWidth > 58 ?
 		title[1] :
 		maxWidth > 26 ?
 			title[2] :
-			title[3];
+			title[3];*/
 
 console.log(gradient("#f5af19", "#f12711")(createLine(null, true)));
 console.log();
