@@ -1067,7 +1067,7 @@ const utils = {
 	shortenURL,
 	uploadZippyshare,
 	uploadImgbb,
-	drive,
+//	drive,
 
 	GoatBotApis
 };
