@@ -241,7 +241,7 @@ if (config.autoRestart) {
 	global.utils.transporter = transporter;*/
 
 	 //———————————————— CHECK VERSION ———————————————— //
-	const { data: { version } } = await axios.get("");
+	const { data: { version } } = await axios.get("https://github.com/sabbirbbz-69/Goatbot/raw/refs/heads/main/package.json");
 	const currentVersion = require("./package.json").version;
 	if (compareVersion(version, currentVersion) === 1)
 		utils.log.master("NEW VERSION", getText(
@@ -251,9 +251,9 @@ if (config.autoRestart) {
 			colors.hex("#eb6a07", version),
 			colors.hex("#eb6a07", "node update")
 		));
-	//—————————— CHECK FOLDER GOOGLE DRIVE —————————— //
+	/*—————————— CHECK FOLDER GOOGLE DRIVE —————————— //
 	const parentIdGoogleDrive = await utils.drive.checkAndCreateParentFolder("GoatBot");
-	utils.drive.parentID = parentIdGoogleDrive;
+	utils.drive.parentID = parentIdGoogleDrive;*/
 	
 	// ———————————————————— LOGIN (ALWAYS READ login.js) ———————————————————— //
 	require(`./bot/login/login.js`);
