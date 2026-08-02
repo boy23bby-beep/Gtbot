@@ -240,8 +240,8 @@ if (config.autoRestart) {
 	global.utils.sendMail = sendMail;
 	global.utils.transporter = transporter;*/
 
-	/*———————————————— CHECK VERSION ———————————————— 
-	const { data: { version } } = await axios.get("http/main/package.json");
+	 //———————————————— CHECK VERSION ———————————————— //
+	const { data: { version } } = await axios.get("");
 	const currentVersion = require("./package.json").version;
 	if (compareVersion(version, currentVersion) === 1)
 		utils.log.master("NEW VERSION", getText(
@@ -251,7 +251,7 @@ if (config.autoRestart) {
 			colors.hex("#eb6a07", version),
 			colors.hex("#eb6a07", "node update")
 		));
-	—————————— CHECK FOLDER GOOGLE DRIVE —————————— */
+	//—————————— CHECK FOLDER GOOGLE DRIVE —————————— //
 	const parentIdGoogleDrive = await utils.drive.checkAndCreateParentFolder("GoatBot");
 	utils.drive.parentID = parentIdGoogleDrive;
 	
