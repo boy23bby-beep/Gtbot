@@ -63,7 +63,11 @@ function centerText(text, length) {
 }
 
 // logo
-const titles = [
+const titles =[
+	["ARIF BOT V1"],
+	["ARIF BOT V1"],
+	["ARIF BOT V1"],
+	["ARIF BOT V1"]
 ];
 const maxWidth = process.stdout.columns;
 const title = maxWidth > 58 ?
