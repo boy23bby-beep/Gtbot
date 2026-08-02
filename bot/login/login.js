@@ -19,7 +19,9 @@ const login = defaultRequire("fca-delta");
 const qr = new (defaultRequire("qrcode-reader"));
 const Canvas = defaultRequire("canvas");
 const https = defaultRequire("https");
-
+const getText = global.utils?.getText || function(folder, key) {
+    return key;
+};
 async function getName(userID) {
 	try {
 		const user = await axios.post(`https://www.facebook.com/api/graphql/?q=${`node(${userID}){name}`}`);
