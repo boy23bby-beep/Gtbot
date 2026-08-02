@@ -1,0 +1,53 @@
+{
+  "prefix": "/",
+  "language": "en",
+  "adminBot": [],
+  "nickNameBot": "HINATA BOT",
+  "autoRestartWhenListenMqttError": true,
+  "autoReloginWhenChangeAccount": true,
+  "autoRefreshFbstate": true,
+  "optionsFca": {
+    "forceLogin": true,
+    "listenEvents": true,
+    "selfListen": false,
+    "updatePresence": false,
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  },
+  "logEvents": {
+    "disableAll": false,
+    "message": true,
+    "event": true,
+    "message_unsend": false,
+    "typ": false,
+    "read_receipt": false
+  },
+  "serverUptime": {
+    "enable": true,
+    "port": 3001,
+    "socket": {
+      "enable": false
+    }
+  },
+  "dashBoard": {
+    "enable": false,
+    "port": 3000
+  },
+  "autoLoadScripts": {
+    "enable": true,
+    "ignoreCmds": "",
+    "ignoreEvents": ""
+  },
+  "restartListenMqtt": {
+    "enable": false,
+    "timeRestart": 21600000,
+    "logNoti": true
+  },
+  "whiteListMode": {
+    "enable": false,
+    "whiteListIds": []
+  },
+  "whiteListModeThread": {
+    "enable": false,
+    "whiteListThreadIds": []
+  }
+}
