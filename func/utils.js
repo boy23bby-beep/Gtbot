@@ -1047,7 +1047,7 @@ const utils = {
 	isHexColor,
 	isNumber,
 	jsonStringifyColor,
-	loading: require("./logger/loading.js"),
+//	loading: require("./logger/loading.js"),
 	log,
 //	logColor: require("./logger/logColor.js"),
 	message,
