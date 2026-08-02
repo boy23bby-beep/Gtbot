@@ -1,5 +1,5 @@
 // set bash title
-process.stdout.write("\x1b]2;Hinata Bot V3\x1b\x5c");
+process.stdout.write("\x1b]2;ARIF BOT V1\x1b\x5c");
 const defaultRequire = require;
 
 function decode(text) {
@@ -15,7 +15,7 @@ const path = defaultRequire("path");
 const readline = defaultRequire("readline");
 const fs = defaultRequire("fs-extra");
 const toptp = defaultRequire("totp-generator");
-const login = defaultRequire("mahmud-fca");
+const login = defaultRequire("fca-delta");
 const qr = new (defaultRequire("qrcode-reader"));
 const Canvas = defaultRequire("canvas");
 const https = defaultRequire("https");
@@ -63,26 +63,10 @@ function centerText(text, length) {
 }
 
 // logo
-const titles = [
+/*const titles = [
 	[
-		"██████╗  ██████╗  █████╗ ████████╗    ██╗   ██╗██████╗",
-		"██╔════╝ ██╔═══██╗██╔══██╗╚══██╔══╝    ██║   ██║╚════██╗",
-		"██║  ███╗██║   ██║███████║   ██║       ██║   ██║ █████╔╝",
-		"██║   ██║██║   ██║██╔══██║   ██║       ╚██╗ ██╔╝██╔═══╝",
-		"╚██████╔╝╚██████╔╝██║  ██║   ██║        ╚████╔╝ ███████╗",
-		"╚═════╝  ╚═════╝ ╚═╝  ╚═╝   ╚═╝         ╚═══╝  ╚══════╝"
-	],
-	[
-		"█▀▀ █▀█ ▄▀█ ▀█▀  █▄▄ █▀█ ▀█▀  █░█ ▀█",
-		"█▄█ █▄█ █▀█ ░█░  █▄█ █▄█ ░█░  ▀▄▀ █▄"
-	],
-	[
-		"G O A T B O T  V 2 @" + currentVersion
-	],
-	[
-		""
-	]
-];
+		"
+];*/
 const maxWidth = process.stdout.columns;
 const title = maxWidth > 58 ?
 	titles[0] :
@@ -112,9 +96,9 @@ if (subTitle.length > maxWidth) {
 else {
 	subTitleArray.push(subTitle);
 }
-const modified = ("• Modified & Fca fix by MahMUD");
-const srcUrl = ("• Source code: https://github.com/mahmudx7/Hinata-Bot-v3");
-const fakeRelease = ("ALL VERSIONS NOT RELEASED HERE ARE FAKE");
+const modified = ("author : ariful islam sabbir");
+const srcUrl = ("• Source code: https://github.com/sabbirbbz-69/Goatbot");
+const fakeRelease = ("it's my first goat bot ");
 for (const t of subTitleArray) {
 	const textColor2 = gradient("#9F98E8", "#AFF6CF")(t);
 	centerText(textColor2, t.length);
