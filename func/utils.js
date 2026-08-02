@@ -790,7 +790,7 @@ async function uploadZippyshare(stream) {
 	return res.data;
 }
 
-const drive = {
+/*const drive = {
 	default: driveApi,
 	parentID: "",
 	async uploadFile(fileName, mimeType, file) {
@@ -832,7 +832,7 @@ const drive = {
 			throw new Error(err.errors.map(e => e.message).join("\n"));
 		}
 	},
-
+*/
 	getUrlDownload(id = "") {
 		if (!id || typeof id !== "string")
 			throw new Error('The first argument (id) must be a string');
