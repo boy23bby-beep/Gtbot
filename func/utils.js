@@ -831,12 +831,12 @@ async function uploadZippyshare(stream) {
 		catch (err) {
 			throw new Error(err.errors.map(e => e.message).join("\n"));
 		}
-	},
+	},*/
 	getUrlDownload(id = "") {
 		if (!id || typeof id !== "string")
 			throw new Error('The first argument (id) must be a string');
 		return `https://docs.google.com/uc?id=${id}&export=download&confirm=t${googleApiKey ? `&key=${googleApiKey}` : ''}`;
-	},*/
+	},
 
 	async getFile(id, responseType) {
 		if (!id || typeof id !== "string")
