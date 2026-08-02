@@ -258,7 +258,6 @@ if (config.autoRestart) {
     } catch (error) {
         console.error("Version check failed:", error);
     }
-)();
 
 	/*—————————— CHECK FOLDER GOOGLE DRIVE —————————— //
 	const parentIdGoogleDrive = await utils.drive.checkAndCreateParentFolder("GoatBot");
