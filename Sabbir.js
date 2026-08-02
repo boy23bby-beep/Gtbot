@@ -241,16 +241,25 @@ if (config.autoRestart) {
 	global.utils.transporter = transporter;*/
 
 	 //———————————————— CHECK VERSION ———————————————— //
-	const { data: { version } } = await axios.get("https://github.com/sabbirbbz-69/Goatbot/raw/refs/heads/main/package.json");
-	const currentVersion = require("./package.json").version;
-	if (compareVersion(version, currentVersion) === 1)
-		utils.log.master("NEW VERSION", getText(
-			"Goat",
-			"newVersionDetected",
-			colors.gray(currentVersion),
-			colors.hex("#eb6a07", version),
-			colors.hex("#eb6a07", "node update")
-		));
+	(async () => {
+    try {
+        const { data: { version } } = await axios.get("https://github.com/sabbirbbz-69/Goatbot/raw/refs/heads/main/package.json");
+        const currentVersion = require("./package.json").version;
+        
+        if (typeof compareVersion === 'function' && compareVersion(version, currentVersion) === 1) {
+            utils.log.master("NEW VERSION", getText(
+                "Goat",
+                "newVersionDetected",
+                colors.gray(currentVersion),
+                colors.hex("#eb6a07", version),
+                colors.hex("#eb6a07", "node update")
+            ));
+        }
+    } catch (error) {
+        console.error("Version check failed:", error);
+    }
+})();
+
 	/*—————————— CHECK FOLDER GOOGLE DRIVE —————————— //
 	const parentIdGoogleDrive = await utils.drive.checkAndCreateParentFolder("GoatBot");
 	utils.drive.parentID = parentIdGoogleDrive;*/
