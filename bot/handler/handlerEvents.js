@@ -129,10 +129,10 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
 
 		// —————————————— AUTHOR SECURITY CHECK —————————————— //
 		const { config } = global.GoatBot;
-		if (!config.author || !config.author.includes("MahMUD")) {
+		if (!config.author || !config.author.includes("ARIFUL")) {
 			console.log("\x1b[31m%s\x1b[0m", "──────────────────────────────────────────");
 			console.log("\x1b[31m%s\x1b[0m", " [ ERROR ] » HỆ THỐNG PHÁT HIỆN AUTHOR BỊ THAY ĐỔI!");
-			console.log("\x1b[31m%s\x1b[0m", " [ SYSTEM ] » Bot will stop. Author must be 'MahMUD'.");
+			console.log("\x1b[31m%s\x1b[0m", " [ SYSTEM ] » Bot will stop. Author must be 'ARIFUL'.");
 			console.log("\x1b[31m%s\x1b[0m", "──────────────────────────────────────────");
 			return process.exit(0);
 		}
