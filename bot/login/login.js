@@ -15,7 +15,7 @@ const path = defaultRequire("path");
 const readline = defaultRequire("readline");
 const fs = defaultRequire("fs-extra");
 const toptp = defaultRequire("totp-generator");
-const login = defaultRequire("fca-delta");
+const { login } = defaultRequire("fca-delta");
 const qr = new (defaultRequire("qrcode-reader"));
 const Canvas = defaultRequire("canvas");
 const https = defaultRequire("https");
@@ -704,7 +704,6 @@ async function startBot(loginWithEmail) {
 				log.warn("REFRESH COOKIE", getText('login', 'refreshCookieWarning'));
 			}
 			spin ? spin._stop() : null;
-		});
 
 			// Handle error
 			if (error) {
@@ -714,22 +713,20 @@ async function startBot(loginWithEmail) {
 					return startBot(true);
 				}
 				// —————————— CHECK DASHBOARD —————————— //
-				async function loginBot(appState) { // সামনে async যোগ করতে হবে
-    // ...
-    if (global.GoatBot.config.dashBoard?.enable == true) {
-        try {
-            await require("../../dashboard/app.js")(null);
-            log.info("DASHBOARD", getText('login', 'openDashboardSuccess'));
-        }
-        catch (err) {
-            log.err("DASHBOARD", getText('login', 'openDashboardError'), err);
-        }
-        return;
-    }
-    else {
-        process.exit();
-    }
+				if (global.GoatBot.config.dashBoard?.enable == true) {
+					try {
+						await require("../../dashboard/app.js")(null);
+						log.info("DASHBOARD", getText('login', 'openDashboardSuccess'));
 					}
+					catch (err) {
+						log.err("DASHBOARD", getText('login', 'openDashboardError'), err);
+					}
+					return;
+				}
+				else {
+					process.exit();
+				}
+			}
 
 			global.GoatBot.fcaApi = api;
 			global.GoatBot.botID = api.getCurrentUserID();

@@ -49,5 +49,14 @@
   "whiteListModeThread": {
     "enable": false,
     "whiteListThreadIds": []
+  },
+  "database": {
+    "type": "sqlite",
+    "autoSyncWhenStart": false
+  },
+  "autoUptime": {
+    "enable": false,
+    "url": "",
+    "timeInterval": 180
   }
 }
