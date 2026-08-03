@@ -2,7 +2,7 @@
   "prefix": "/",
   "language": "en",
   "adminBot": [],
-  "nickNameBot": "HINATA BOT",
+  "nickNameBot": "ARIF BOT",
   "autoRestartWhenListenMqttError": true,
   "autoReloginWhenChangeAccount": true,
   "autoRefreshFbstate": true,
