@@ -659,7 +659,7 @@ async function startBot(loginWithEmail) {
 		clearInterval(global.intervalRestartListenMqtt);
 		delete global.intervalRestartListenMqtt;
 
-		if (facebookAccount.i_user)
+		/* (facebookAccount.i_user)
 			pushI_user(appState, facebookAccount.i_user);
 
 		let isSendNotiErrorMessage = false;
@@ -691,7 +691,20 @@ async function startBot(loginWithEmail) {
 					spin?._stop();
 					log.warn("REFRESH COOKIE", getText('login', 'refreshCookieWarning'));
 				}
+			spin ? spin._stop() : null;*/
+
+				if (facebookAccount?.i_user)
+			pushI_user(appState, facebookAccount.i_user);
+
+		let isSendNotiErrorMessage = false;
+
+		login({ appState }, global.GoatBot.config.optionsFca, async function (error, api) {
+			if (!isNaN(facebookAccount?.intervalGetNewCookie) && facebookAccount.intervalGetNewCookie > 0) {
+				spin?._stop();
+				log.warn("REFRESH COOKIE", getText('login', 'refreshCookieWarning'));
+			}
 			spin ? spin._stop() : null;
+		});
 
 			// Handle error
 			if (error) {
