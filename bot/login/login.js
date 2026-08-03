@@ -49,7 +49,7 @@ const { writeFileSync, readFileSync, existsSync, watch } = require("fs-extra");
 const handlerWhenListenHasError = require("./handlerWhenListenHasError.js");
 const checkLiveCookie = require("./checkLiveCookie.js");
 const { callbackListenTime, storage5Message } = global.GoatBot;
-const { log, logColor, getPrefix, createOraDots, jsonStringifyColor, getText, convertTime, colors, randomString } = global.utils;
+const { log, logColor, getPrefix, createOraDots, jsonStringifyColor, convertTime, colors, randomString } = global.utils;
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 const currentVersion = require(`${process.cwd()}/package.json`).version;
