@@ -714,7 +714,7 @@ async function startBot(loginWithEmail) {
 					return startBot(true);
 				}
 				// —————————— CHECK DASHBOARD —————————— //
-				async function loginBot(...) { // সামনে async যোগ করতে হবে
+				async function loginBot(appState) { // সামনে async যোগ করতে হবে
     // ...
     if (global.GoatBot.config.dashBoard?.enable == true) {
         try {
