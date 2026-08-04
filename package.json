@@ -33,6 +33,7 @@
     "ffmpeg-static": "^5.2.0",
     "fontstyles": "^1.1.2",
     "form-data": "^4.0.0",
+    "moment-timezone": "^0.5.48",
     "fs-extra": "^11.3.2",
     "googleapis": "^100.0.0",
     "gradient-string": "^2.0.2",
