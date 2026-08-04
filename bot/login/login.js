@@ -817,7 +817,12 @@ async function startBot(loginWithEmail) {
 			// ————————————————— CUSTOM SCRIPTS ————————————————— //
 			await require("../custom.js")({ api, threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData, getText });
 			// —————————————————— LOAD SCRIPTS —————————————————— //
-			await require(process.env.NODE_ENV === 'development' ? "./loadScripts.dev.js" : "./loadScripts.js")(api, threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData, createLine);
+			// স্ক্রিপ্ট যদি আগে লোড না হয়ে থাকে, তবেই লোড করবে
+if (!global.GoatBot.isLoadedScripts) {
+    await require(process.env.NODE_ENV === 'development' ? "./loadScripts.dev.js" : "./loadScripts.js")(api, threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData, createLine);
+    global.GoatBot.isLoadedScripts = true; // একবার লোড হলে ফ্ল্যাগ ট্রু (true) হয়ে যাবে
+}
+
 			// ———————————— CHECK AUTO LOAD SCRIPTS ———————————— //
 			if (global.GoatBot.config.autoLoadScripts?.enable == true) {
 				const ignoreCmds = global.GoatBot.config.autoLoadScripts.ignoreCmds?.replace(/[ ,]+/g, ' ').trim().split(' ') || [];
