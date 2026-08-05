@@ -38,11 +38,11 @@ module.exports.onStart = async ({ api, event, args, prefix }) => {
         categories[cat].push(cmd.config.name);
     }
 
-    let text = `╔══════════════════╗\n║   HINATA BOT MENU   ║\n╚══════════════════╝\n\n`;
+    let text = `╔══════════════════╗\n║   ARIF BOT MENU   ║\n╚══════════════════╝\n\n`;
     text += `Prefix: ${pfx} | Total: ${commands.size} commands\n\n`;
     for (const [cat, cmds] of Object.entries(categories).sort()) {
         text += `━━━ ${cat.toUpperCase()} ━━━\n`;
-        text += cmds.map(n => `• ${pfx}${n}`).join("\n") + "\n\n";
+        text += cmds.map(n => `↪${n}`).join("\n") + "\n\n";
     }
     text += `Type ${pfx}help <command> for details.`;
     api.sendMessage(text, event.threadID, event.messageID);
