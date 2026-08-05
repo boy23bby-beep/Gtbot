@@ -11,6 +11,7 @@ const mimeDB = require("mime-db");
 const _ = require("lodash");
 const { google } = require("googleapis");
 const ora = require("ora");
+const { config } = global.GoatBot;
 const log = require("../logger/log.js");
 const { isHexColor, colors } = require("../func/colors.js");
 const Prism = require("../func/prism.js");
