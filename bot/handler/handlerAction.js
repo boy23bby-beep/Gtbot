@@ -12,6 +12,8 @@ module.exports = (api, threadModel, userModel, dashBoardModel, globalModel, user
 	return async function (event) {
 		const message = createFuncMessage(api, event);
 
+		console.log("Message received from:", event.senderID, "Content:", event.body);
+
 		await handlerCheckDB(usersData, threadsData, event);
 		const handlerChat = await handlerEvents(event, message);
 		if (!handlerChat)
