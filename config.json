@@ -3,7 +3,7 @@
   "prefix": "/",
   "author": "ARIFUL",
   "language": "en",
-  "adminBot": [],
+  "adminBot": [61589411307081],
   "nickNameBot": "ARIF BOT",
   "autoRestartWhenListenMqttError": true,
   "autoReloginWhenChangeAccount": true,
