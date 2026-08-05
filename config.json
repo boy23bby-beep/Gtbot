@@ -1,9 +1,8 @@
 {
-  {
+  
   "prefix": "/",
   "author": "ARIFUL",
   "language": "en",
-}
   "adminBot": [],
   "nickNameBot": "ARIF BOT",
   "autoRestartWhenListenMqttError": true,
