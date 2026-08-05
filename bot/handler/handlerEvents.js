@@ -73,7 +73,7 @@ function isBannedOrOnlyAdmin(userData, threadData, senderID, threadID, isGroup, 
 		return true;
 	}
 
-	if (
+	/*if (
 		config.adminOnly.enable == true
 		&& !adminBot.includes(senderID)
 		&& !config.adminOnly.ignoreCommand.includes(commandName)
@@ -81,8 +81,17 @@ function isBannedOrOnlyAdmin(userData, threadData, senderID, threadID, isGroup, 
 		if (hideNotiMessage.adminOnly == false)
 			message.reply(getText("onlyAdminBot", null, null, null, lang));
 		return true;
+	}*/
+	if (
+		config?.adminOnly?.enable == true
+		&& !adminBot.includes(senderID)
+		&& !config?.adminOnly?.ignoreCommand?.includes(commandName)
+	) {
+		if (hideNotiMessage?.adminOnly == false)
+			message.reply(getText("onlyAdminBot", null, null, null, lang));
+		return true;
 	}
-
+	
 	if (isGroup == true) {
 		if (
 			threadData.data.onlyAdminBox === true
