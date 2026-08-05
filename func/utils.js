@@ -259,13 +259,23 @@ function getPrefix(threadID) {
 	return prefix;
 }
 
-function getTime(timestamps, format) {
+/*function getTime(timestamps, format) {
 	// check if just have timestamps -> format = timestamps
 	if (!format && typeof timestamps == 'string') {
 		format = timestamps;
 		timestamps = undefined;
 	}
 	return moment(timestamps).tz(config.timeZone).format(format);
+}*/
+function getTime(timestamps, format) {
+	// check if just have timestamps -> format = timestamps
+	if (!format && typeof timestamps == 'string') {
+		format = timestamps;
+		timestamps = undefined;
+	}
+	const timeZone = config?.timeZone || global?.GoatBot?.config?.timeZone || "Asia/Dhaka";
+	const targetFormat = format || "YYYY-MM-DD HH:mm:ss";
+	return moment(timestamps).tz(timeZone).format(targetFormat);
 }
 
 /**
