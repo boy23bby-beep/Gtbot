@@ -26,6 +26,8 @@ module.exports = (api, threadModel, userModel, dashBoardModel, globalModel, user
 			case "message_reply":
 			case "message_unsend":
 				onChat();
+				console.log("Executing command:", commandName);
+
 				onStart();
 				onReply();
 				if(event.type == "message_unsend"){
