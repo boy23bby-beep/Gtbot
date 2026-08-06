@@ -3,7 +3,7 @@ const path = require('path');
 const axios = require('axios');
 
 module.exports.config = {
-    name: "installfile",
+    name: "install",
     version: "1.0",
     author: "ARIF",
     countDown: 10,
