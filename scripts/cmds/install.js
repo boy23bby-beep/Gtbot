@@ -1,24 +1,64 @@
-const { exec } = require("child_process");
+const fs = require('fs');
+const path = require('path');
+const axios = require('axios');
 
 module.exports.config = {
-    name: "install",
+    name: "installfile",
     version: "1.0",
     author: "ARIF",
     countDown: 10,
     role: 2,
-    description: "Install an npm package",
+    description: "Download and install a js file from a URL/attachment",
     category: "admin",
-    guide: { en: "{pn} <package-name>" }
+    guide: { en: "{pn} <file-name.js> <direct-url> (অথবা ফাইলে রিপ্লাই দিয়ে কমান্ড লিখুন)" }
 };
 
 module.exports.onStart = async ({ api, event, args }) => {
-    if (!args[0]) return api.sendMessage("❌ Please provide a package name.\nUsage: install <package>", event.threadID, event.messageID);
-    const pkg = args[0].replace(/[^a-zA-Z0-9@/_\-\.]/g, "");
-    const msg = await new Promise(r => api.sendMessage(`📦 Installing ${pkg}...`, event.threadID, (e, i) => r(i), event.messageID));
-    exec(`npm install ${pkg} --save`, (err, stdout, stderr) => {
-        const text = err
-            ? `❌ Failed to install ${pkg}:\n${stderr?.slice(0, 300) || err.message}`
-            : `✅ Installed ${pkg} successfully!`;
-        api.editMessage(text, msg.messageID);
-    });
+    try {
+        let fileName = args[0];
+        let fileUrl = args[1];
+
+        // যদি কেউ মেসেজে রিপ্লাই দিয়ে কমান্ড লিখে এবং লিংক দেয়
+        if (event.type === "message_reply") {
+            if (event.messageReply.attachments && event.messageReply.attachments.length > 0) {
+                fileUrl = event.messageReply.attachments[0].url;
+            }
+        }
+
+        if (!fileName || !fileUrl) {
+            return api.sendMessage("❌ দয়া করে ফাইলের নাম এবং ডাউনলোড লিংক দিন।\nউদাহরণ: installfile test.js <url>", event.threadID, event.messageID);
+        }
+
+        // ফাইলের নাম .js দিয়ে শেষ হচ্ছে কিনা চেক করা
+        if (!fileName.endsWith('.js')) {
+            fileName += '.js';
+        }
+
+        // ফাইলটি কোন ফোল্ডারে সেভ হবে (যেমন: commands ফোল্ডার)
+        const targetDir = path.join(__dirname); // বর্তমান কমান্ড ফোল্ডার
+        const filePath = path.join(targetDir, fileName);
+
+        const msg = await new Promise(r => api.sendMessage(`📥 ডাউনলোডিং ${fileName}...`, event.threadID, (e, i) => r(i), event.messageID));
+
+        // ফাইল ডাউনলোড করা
+        const response = await axios({
+            method: 'GET',
+            url: fileUrl,
+            responseType: 'stream'
+        });
+
+        const writer = fs.createWriteStream(filePath);
+        response.data.pipe(writer);
+
+        writer.on('finish', () => {
+            api.editMessage(`✅ সফলভাবে ${fileName} ইনস্টল বা সেভ করা হয়েছে!`, msg.messageID);
+        });
+
+        writer.on('error', (err) => {
+            api.editMessage(`❌ ফাইল সেভ করার সময় ত্রুটি হয়েছে: ${err.message}`, msg.messageID);
+        });
+
+    } catch (error) {
+        api.sendMessage(`❌ ত্রুটি: ${error.message}`, event.threadID, event.messageID);
+    }
 };
