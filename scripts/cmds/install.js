@@ -1,64 +1,63 @@
-const fs = require('fs');
-const path = require('path');
-const axios = require('axios');
+const fs = require("fs");
+const path = require("path");
 
-module.exports.config = {
-    name: "install",
-    version: "1.0",
-    author: "ARIF",
-    countDown: 10,
-    role: 2,
-    description: "Download and install a js file from a URL/attachment",
-    category: "admin",
-    guide: { en: "{pn} <file-name.js> <direct-url> (অথবা ফাইলে রিপ্লাই দিয়ে কমান্ড লিখুন)" }
-};
+module.exports = {
+    config: {
+        name: "install",
+        version: "1.1.0",
+        author: "ariful",
+        countDown: 5,
+        role: 2, // Admin only (change to 0 if everyone can use)
+        shortDescription: "Install/save script dynamically",
+        longDescription: "Writes a new command script into the commands directory and reloads it, with debug error logging.",
+        category: "owner",
+        guide: "{pn} [command_name] [code]"
+    },
 
-module.exports.onStart = async ({ api, event, args }) => {
-    try {
-        let fileName = args[0];
-        let fileUrl = args[1];
+    onStart: async function ({ api, event, args, message }) {
+        const { threadID, messageID } = event;
+        
+        if (args.length < 2) {
+            return message.reply("⚠️ Please provide a command name and the code.\nExample: insrall test console.log('hello');");
+        }
 
-        // যদি কেউ মেসেজে রিপ্লাই দিয়ে কমান্ড লিখে এবং লিংক দেয়
-        if (event.type === "message_reply") {
-            if (event.messageReply.attachments && event.messageReply.attachments.length > 0) {
-                fileUrl = event.messageReply.attachments[0].url;
+        const cmdName = args[0].toLowerCase().replace(/[^a-z0-9_]/g, "");
+        let codeContent = args.slice(1).join(" ");
+
+        // Clean up code blocks if user used markdown formatting in chat
+        codeContent = codeContent.replace(/^```[a-z]*\n?/i, "").replace(/```$/, "").trim();
+
+        const fileName = `${cmdName}.js`;
+        const filePath = path.join(__dirname, fileName);
+
+        try {
+            // Write the script to the commands directory
+            fs.writeFileSync(filePath, codeContent, "utf8");
+
+            // Debug Log: Success writing file
+            const debugLog = `[DEBUG - INSTALL]\n- File: ${fileName}\n- Status: Successfully written to disk.\n- Path: ${filePath}`;
+            console.log(debugLog);
+
+            // Attempt to reload the command in GoatBot if global client exists
+            if (global.client && global.client.commands) {
+                try {
+                    delete require.cache[require.resolve(filePath)];
+                    const pux = require(filePath);
+                    if (pux.config && pux.config.name) {
+                        global.client.commands.set(pux.config.name, pux);
+                    }
+                } catch (reloadErr) {
+                    console.error("[DEBUG ERROR - RELOAD]", reloadErr);
+                }
             }
+
+            return message.reply(`✅ Successfully installed command: **${cmdName}**\n\n\`\`\`text\n${debugLog}\n\`\`\``);
+
+        } catch (error) {
+            // Debug Log: Error handling
+            const errorLog = `❌ [DEBUG ERROR - INSTALL FAIL]\nFile: ${fileName}\nError: ${error.message}`;
+            console.error(errorLog);
+            return message.reply(errorLog);
         }
-
-        if (!fileName || !fileUrl) {
-            return api.sendMessage("❌ দয়া করে ফাইলের নাম এবং ডাউনলোড লিংক দিন।\nউদাহরণ: installfile test.js <url>", event.threadID, event.messageID);
-        }
-
-        // ফাইলের নাম .js দিয়ে শেষ হচ্ছে কিনা চেক করা
-        if (!fileName.endsWith('.js')) {
-            fileName += '.js';
-        }
-
-        // ফাইলটি কোন ফোল্ডারে সেভ হবে (যেমন: commands ফোল্ডার)
-        const targetDir = path.join(__dirname); // বর্তমান কমান্ড ফোল্ডার
-        const filePath = path.join(targetDir, fileName);
-
-        const msg = await new Promise(r => api.sendMessage(`📥 ডাউনলোডিং ${fileName}...`, event.threadID, (e, i) => r(i), event.messageID));
-
-        // ফাইল ডাউনলোড করা
-        const response = await axios({
-            method: 'GET',
-            url: fileUrl,
-            responseType: 'stream'
-        });
-
-        const writer = fs.createWriteStream(filePath);
-        response.data.pipe(writer);
-
-        writer.on('finish', () => {
-            api.editMessage(`✅ সফলভাবে ${fileName} ইনস্টল বা সেভ করা হয়েছে!`, msg.messageID);
-        });
-
-        writer.on('error', (err) => {
-            api.editMessage(`❌ ফাইল সেভ করার সময় ত্রুটি হয়েছে: ${err.message}`, msg.messageID);
-        });
-
-    } catch (error) {
-        api.sendMessage(`❌ ত্রুটি: ${error.message}`, event.threadID, event.messageID);
     }
 };
