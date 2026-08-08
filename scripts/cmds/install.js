@@ -1,66 +1,152 @@
-module.exports = {
-    config: {
-        name: "install",
-        version: "2.0.0",
-        author: "AI Collaborator",
-        countDown: 5,
-        role: 2, // শুধু অ্যাডমিনের জন্য
-        shortDescription: "মেমোরিতে ১০ মিনিটের জন্য কমান্ড ইনস্টল করুন",
-        longDescription: "মেসেঞ্জার থেকে কোড নিয়ে ফাইল সেভ না করে সরাসরি বটের ক্যাশ মেমোরিতে ১০ মিনিটের জন্য রান করায়।",
-        category: "owner",
-        guide: "{pn} [command_name] [code]"
-    },
+const { execSync } = require("child_process");
+const fs = require("fs-extra");
+const { createCanvas } = require("canvas");
 
-    onStart: async function ({ api, event, args, message }) {
-        if (args.length < 2) {
-            return message.reply("⚠️ দয়া করে কমান্ডের নাম এবং কোড দিন।\nউদাহরণ: !install tempcmd module.exports = { config: { name: 'tempcmd' }, onStart: async ({ message }) => message.reply('Temporary!') }");
-        }
+module.exports.config = {
+	name: "install",
+	aliases: ["cmd", "addcmd"],
+	version: "3.2",
+	author: "ARIFUL",
+	countDown: 3,
+	role: 2,
+	description: "Install temporary commands with an image dashboard",
+	category: "system",
+	guide: { 
+		en: "{pn} <command_name> <code>"
+	}
+};
 
-        const cmdName = args[0].toLowerCase().replace(/[^a-z0-9_]/g, "");
-        let codeContent = args.slice(1).join(" ");
+if (!global.tempCommands) {
+	global.tempCommands = new Map();
+}
 
-        // মেসেঞ্জারের কোড ফরম্যাটিং দূর করা
-        codeContent = codeContent
-            .replace(/^```[a-z]*\n?/i, "")
-            .replace(/```$/, "")
-            .trim();
+// Function to create dashboard image
+async function createDashboardImage(cmdName, status, loadTime, errorMsg = "") {
+	const width = 800;
+	const height = 400;
+	const canvas = createCanvas(width, height);
+	const ctx = canvas.getContext("2d");
 
-        try {
-            // জাভাস্ক্রিপ্ট কোড অবজেক্টে রূপান্তর করার জন্য Module প্রিপারেশন
-            const m = new module.constructor();
-            m.paths = module.paths;
-            m._compile(`module.exports = { ${codeContent.includes("module.exports") ? codeContent.replace("module.exports =", "") : codeContent} };`, 'temp_command.js');
+	// Background gradient
+	const gradient = ctx.createLinearGradient(0, 0, width, height);
+	gradient.addColorStop(0, "#0f172a");
+	gradient.addColorStop(1, "#1e1b4b");
+	ctx.fillStyle = gradient;
+	ctx.fillRect(0, 0, width, height);
 
-            const commandObj = m.exports;
+	// Card container box
+	ctx.fillStyle = "rgba(30, 41, 59, 0.7)";
+	ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+	ctx.shadowBlur = 20;
+	ctx.beginPath();
+	ctx.roundRect(40, 40, 720, 320, 20);
+	ctx.fill();
+	ctx.shadowBlur = 0;
 
-            if (!commandObj.config || !commandObj.config.name) {
-                return message.reply("❌ ত্রুটি: কোডের মধ্যে সঠিক `config.name` পাওয়া যায়নি!");
-            }
+	// Border glow
+	ctx.strokeStyle = status === "SUCCESS" ? "#10b981" : "#ef4444";
+	ctx.lineWidth = 3;
+	ctx.stroke();
 
-            const realCmdName = commandObj.config.name.toLowerCase();
+	// Header Text
+	ctx.fillStyle = "#ffffff";
+	ctx.font = "bold 26px sans-serif";
+	ctx.fillText("⚡ COMMAND INSTALLER DASHBOARD", 80, 100);
 
-            // বটের ক্যাশ মেমোরিতে কমান্ড সেট করা
-            if (global.client && global.client.commands) {
-                global.client.commands.set(realCmdName, commandObj);
-            }
+	// Divider line
+	ctx.strokeStyle = "#334155";
+	ctx.lineWidth = 2;
+	ctx.beginPath();
+	ctx.moveTo(80, 130);
+	ctx.lineTo(720, 130);
+	ctx.stroke();
 
-            const debugLog = `[DEBUG - TEMP CACHE SUCCESS]\n- Command: ${realCmdName}\n- Status: Saved in memory\n- Duration: 10 Minutes`;
-            console.log(debugLog);
+	// Details
+	ctx.font = "20px sans-serif";
+	ctx.fillStyle = "#94a3b8";
+	ctx.fillText("Command Name:", 80, 180);
+	ctx.fillText("Execution Status:", 80, 220);
+	ctx.fillText("Time Taken:", 80, 260);
 
-            // ঠিক ১০ মিনিট (৬০০০০০ মিলিভিসেকেন্ড) পর ক্যাশ থেকে ডিলিট করার টাইমার
-            setTimeout(() => {
-                if (global.client && global.client.commands) {
-                    global.client.commands.delete(realCmdName);
-                    console.log(`[DEBUG - EXPIRED] Command '${realCmdName}' has been removed from cache after 10 minutes.`);
-                }
-            }, 10 * 60 * 1000); // ১০ মিনিট
+	ctx.fillStyle = "#ffffff";
+	ctx.font = "bold 20px sans-serif";
+	ctx.fillText(cmdName, 260, 180);
+	
+	ctx.fillStyle = status === "SUCCESS" ? "#10b981" : "#ef4444";
+	ctx.fillText(status === "SUCCESS" ? "🟢 ACTIVE (5 Mins)" : "🔴 FAILED", 260, 220);
 
-            return message.reply(`✅ Temporary command installed for **10 minutes**!\n\n\`\`\`text\n${debugLog}\n\`\`\``);
+	ctx.fillStyle = "#f8fafc";
+	ctx.fillText(`${loadTime} ms`, 260, 260);
 
-        } catch (error) {
-            const errorLog = `❌ [DEBUG ERROR - MEMORY FAIL]\nError: ${error.message}`;
-            console.error(errorLog);
-            return message.reply(errorLog);
-        }
-    }
+	if (errorMsg) {
+		ctx.fillStyle = "#fca5a5";
+		ctx.font = "16px sans-serif";
+		ctx.fillText(`Error: ${errorMsg.substring(0, 55)}`, 80, 315);
+	} else {
+		ctx.fillStyle = "#38bdf8";
+		ctx.font = "16px sans-serif";
+		ctx.fillText("✨ Command is now active and ready to use!", 80, 315);
+	}
+
+	return canvas.toBuffer("image/png");
+}
+
+module.exports.onStart = async ({ message, event, args, prefix, commandName }) => {
+	if (args.length < 2) {
+		return message.reply(`❌ Usage: ${prefix}${commandName} <name> <code>`);
+	}
+
+	const cmdName = args[0].toLowerCase().replace(/[^a-z0-9_]/g, "");
+	if (cmdName.length === 0) return message.reply("❌ Invalid name!");
+
+	let codeContent = args.slice(1).join(" ").replace(/^```[a-z]*\n?/i, "").replace(/```$/, "").trim();
+
+	const startTime = Date.now();
+	
+	try {
+		const m = new module.constructor();
+		m.paths = module.paths;
+		let preparedCode = codeContent.includes("module.exports") ? codeContent : `module.exports = { ${codeContent} }`;
+		m._compile(`${preparedCode};`, `temp_command_${cmdName}.js`);
+
+		const commandObj = m.exports;
+		if (!commandObj.config || !commandObj.onStart) throw new Error("Missing config or onStart");
+
+		global.tempCommands.set(cmdName, commandObj);
+		if (global.GoatBot?.commands) global.GoatBot.commands.set(cmdName, commandObj);
+
+		setTimeout(() => {
+			global.tempCommands.delete(cmdName);
+			if (global.GoatBot?.commands) global.GoatBot.commands.delete(cmdName);
+		}, 5 * 60 * 1000);
+
+		const loadTime = Date.now() - startTime;
+		const imageBuffer = await createDashboardImage(cmdName, "SUCCESS", loadTime);
+		const filePath = __dirname + `/cache/${cmdName}_dash.png`;
+		await fs.outputFile(filePath, imageBuffer);
+
+		return message.send({
+			body: `✅ Command '${cmdName}' installed successfully!`,
+			attachment: fs.createReadStream(filePath)
+		}, () => fs.unlinkSync(filePath));
+
+	} catch (error) {
+		const loadTime = Date.now() - startTime;
+		const imageBuffer = await createDashboardImage(cmdName, "FAILED", loadTime, error.message);
+		const filePath = __dirname + `/cache/${cmdName}_error.png`;
+		await fs.outputFile(filePath, imageBuffer);
+
+		return message.send({
+			body: `❌ Installation failed for '${cmdName}'`,
+			attachment: fs.createReadStream(filePath)
+		}, () => fs.unlinkSync(filePath));
+	}
+};
+
+module.exports.onChat = async ({ event, message }) => {
+	if (global.tempCommands?.size > 0 && global.GoatBot?.commands) {
+		for (const [cmdName, cmd] of global.tempCommands.entries()) {
+			global.GoatBot.commands.set(cmdName, cmd);
+		}
+	}
 };
