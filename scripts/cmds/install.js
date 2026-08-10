@@ -5,11 +5,11 @@ const { createCanvas } = require("canvas");
 module.exports.config = {
 	name: "install",
 	aliases: ["cmd", "addcmd"],
-	version: "3.2",
+	version: "3.5",
 	author: "ARIFUL",
 	countDown: 3,
 	role: 2,
-	description: "Install temporary commands with an image dashboard",
+	description: "Install temporary commands powerfully with an image dashboard",
 	category: "system",
 	guide: { 
 		en: "{pn} <command_name> <code>"
@@ -81,7 +81,7 @@ async function createDashboardImage(cmdName, status, loadTime, errorMsg = "") {
 	if (errorMsg) {
 		ctx.fillStyle = "#fca5a5";
 		ctx.font = "16px sans-serif";
-		ctx.fillText(`Error: ${errorMsg.substring(0, 55)}`, 80, 315);
+		ctx.fillText(`Error: ${errorMsg.substring(0, 55)}...`, 80, 315);
 	} else {
 		ctx.fillStyle = "#38bdf8";
 		ctx.font = "16px sans-serif";
@@ -96,8 +96,10 @@ module.exports.onStart = async ({ message, event, args, prefix, commandName }) =
 		return message.reply(`❌ Usage: ${prefix}${commandName} <name> <code>`);
 	}
 
-	const cmdName = args[0].toLowerCase().replace(/[^a-z0-9_]/g, "");
-	if (cmdName.length === 0) return message.reply("❌ Invalid name!");
+	// [UPDATED] - Automatically removes .js extension and filters invalid characters
+	const cmdName = args[0].toLowerCase().replace(/\.js$/, "").replace(/[^a-z0-9_]/g, "");
+	
+	if (cmdName.length === 0) return message.reply("❌ Invalid command name!");
 
 	let codeContent = args.slice(1).join(" ").replace(/^```[a-z]*\n?/i, "").replace(/```$/, "").trim();
 
@@ -110,19 +112,26 @@ module.exports.onStart = async ({ message, event, args, prefix, commandName }) =
 		m._compile(`${preparedCode};`, `temp_command_${cmdName}.js`);
 
 		const commandObj = m.exports;
-		if (!commandObj.config || !commandObj.onStart) throw new Error("Missing config or onStart");
+		if (!commandObj.config || !commandObj.onStart) throw new Error("Missing config or onStart function!");
 
+		// [UPDATED] - Registers command universally to prevent "commandNotFound"
 		global.tempCommands.set(cmdName, commandObj);
-		if (global.GoatBot?.commands) global.GoatBot.commands.set(cmdName, commandObj);
+		if (global.GoatBot && global.GoatBot.commands) global.GoatBot.commands.set(cmdName, commandObj);
+		if (global.client && global.client.commands) global.client.commands.set(cmdName, commandObj);
 
 		setTimeout(() => {
 			global.tempCommands.delete(cmdName);
 			if (global.GoatBot?.commands) global.GoatBot.commands.delete(cmdName);
+			if (global.client?.commands) global.client.commands.delete(cmdName);
 		}, 5 * 60 * 1000);
 
 		const loadTime = Date.now() - startTime;
 		const imageBuffer = await createDashboardImage(cmdName, "SUCCESS", loadTime);
-		const filePath = __dirname + `/cache/${cmdName}_dash.png`;
+		
+		// [UPDATED] - Ensures the cache directory exists before saving the image
+		const cacheDir = __dirname + `/cache`;
+		await fs.ensureDir(cacheDir);
+		const filePath = `${cacheDir}/${cmdName}_dash.png`;
 		await fs.outputFile(filePath, imageBuffer);
 
 		return message.send({
@@ -131,9 +140,14 @@ module.exports.onStart = async ({ message, event, args, prefix, commandName }) =
 		}, () => fs.unlinkSync(filePath));
 
 	} catch (error) {
+		console.error(`[INSTALL COMMAND ERROR] - ${cmdName}:`, error); // Log error to console for debugging
+		
 		const loadTime = Date.now() - startTime;
 		const imageBuffer = await createDashboardImage(cmdName, "FAILED", loadTime, error.message);
-		const filePath = __dirname + `/cache/${cmdName}_error.png`;
+		
+		const cacheDir = __dirname + `/cache`;
+		await fs.ensureDir(cacheDir);
+		const filePath = `${cacheDir}/${cmdName}_error.png`;
 		await fs.outputFile(filePath, imageBuffer);
 
 		return message.send({
@@ -144,9 +158,11 @@ module.exports.onStart = async ({ message, event, args, prefix, commandName }) =
 };
 
 module.exports.onChat = async ({ event, message }) => {
-	if (global.tempCommands?.size > 0 && global.GoatBot?.commands) {
+	// Re-syncs the commands in chat just to be absolutely sure they stay active
+	if (global.tempCommands?.size > 0) {
 		for (const [cmdName, cmd] of global.tempCommands.entries()) {
-			global.GoatBot.commands.set(cmdName, cmd);
+			if (global.GoatBot && global.GoatBot.commands) global.GoatBot.commands.set(cmdName, cmd);
+			if (global.client && global.client.commands) global.client.commands.set(cmdName, cmd);
 		}
 	}
 };
