@@ -1,5 +1,5 @@
 // set bash title
-process.stdout.write("\x1b]2;ARIF BOT V1\x1b\x5c");
+process.stdout.write("\x1b ARIF BOT V1 x1b\x5c");
 const defaultRequire = require;
 
 function decode(text) {
@@ -15,7 +15,7 @@ const path = defaultRequire("path");
 const readline = defaultRequire("readline");
 const fs = defaultRequire("fs-extra");
 const toptp = defaultRequire("totp-generator");
-const { login } = defaultRequire("fca-delta");
+const login = defaultRequire("nexus-fca");
 const qr = new (defaultRequire("qrcode-reader"));
 const Canvas = defaultRequire("canvas");
 const https = defaultRequire("https");
