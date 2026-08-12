@@ -16,7 +16,17 @@ function validJSON(pathDir) {
 	try {
 		if (!fs.existsSync(pathDir))
 			throw new Error(`File "${pathDir}" not found`);
-		execSync(`npx jsonlint "${pathDir}"`, { stdio: 'pipe' });
+		// Use local JSON parse or jsonlint-mod instead of calling npx to avoid runtime auto-install
+		const content = fs.readFileSync(pathDir, 'utf8');
+		try {
+			// prefer jsonlint-mod if available to get better error messages
+			const jsonlint = require('jsonlint-mod');
+			jsonlint.parse(content);
+		}
+		catch (e) {
+			// fallback to native JSON.parse to validate
+			JSON.parse(content);
+		}
 		return true;
 	}
 	catch (err) {
@@ -239,7 +249,7 @@ if (config.autoRestart) {
 	}
 
 	global.utils.sendMail = sendMail;
-	global.utils.transporter = transporter;*/
+	global.utils.transporter = transporter*/;
 
 	 //———————————————— CHECK VERSION ———————————————— //
 	(async () => {
