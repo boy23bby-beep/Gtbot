@@ -32,7 +32,7 @@ module.exports = {
         let botName = "Arif Bot";
 
         try {
-            const configPath = path.join(process.cwd(), "HindSiliguri-Light.ttf");
+            const fontPath = path.join(__dirname, "../../func/hindsiligury/HindSiliguri-Light.ttf");
             if (fs.existsSync(configPath)) {
                 const configData = JSON.parse(fs.readFileSync(configPath, "utf8"));
                 botName = configData.NickNameBot || configData.botName || configData.name || configData.BOT_NAME || "Arif Bot";
