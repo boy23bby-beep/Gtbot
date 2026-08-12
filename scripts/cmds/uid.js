@@ -5,12 +5,10 @@ module.exports = {
         author: "Developer",
         countDown: 5,
         role: 0,
-        shortDescription: {
-            vi: "Xem UID và Dashboard",
+        shortDescription:{
             en: "View UID and Dashboard"
         },
-        longDescription: {
-            vi: "Gửi UID và ảnh dashboard cùng một lúc",
+        longDescription:{
             en: "Send UID and dashboard image together in a single message"
         },
         category: "Box Chat",
@@ -34,7 +32,7 @@ module.exports = {
         let botName = "Arif Bot";
 
         try {
-            const configPath = path.join(process.cwd(), "config.json");
+            const configPath = path.join(process.cwd(), "HindSiliguri-Light.ttf");
             if (fs.existsSync(configPath)) {
                 const configData = JSON.parse(fs.readFileSync(configPath, "utf8"));
                 botName = configData.NickNameBot || configData.botName || configData.name || configData.BOT_NAME || "Arif Bot";
