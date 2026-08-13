@@ -73,15 +73,6 @@ function isBannedOrOnlyAdmin(userData, threadData, senderID, threadID, isGroup, 
 		return true;
 	}
 
-	/*if (
-		config.adminOnly.enable == true
-		&& !adminBot.includes(senderID)
-		&& !config.adminOnly.ignoreCommand.includes(commandName)
-	) {
-		if (hideNotiMessage.adminOnly == false)
-			message.reply(getText("onlyAdminBot", null, null, null, lang));
-		return true;
-	}*/
 	if (
 		config?.adminOnly?.enable == true
 		&& !adminBot.includes(senderID)
@@ -134,7 +125,9 @@ function createGetText2(langCode, pathCustomLang, prefix, command) {
 }
 
 module.exports = function (api, threadModel, userModel, dashBoardModel, globalModel, usersData, threadsData, dashBoardData, globalData) {
-	return async function (event, message) {
+
+	// Define the per-event handler as a named function
+	async function handlerRunner(event, message) {
 
 		// —————————————— AUTHOR SECURITY CHECK —————————————— //
 		const { config } = global.GoatBot;
@@ -324,8 +317,8 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
 				log.info("CALL COMMAND", `${commandName} | ${userData.name} | ${senderID} | ${threadID} | ${args.join(" ")}`);
 			}
 			catch (err) {
-				log.err("CALL COMMAND", `An error occurred when calling the command ${commandName}`, err);
-				return await message.reply(utils.getText({ lang: langCode, head: "handlerEvents" }, "errorOccurred", time, commandName, removeHomeDir(err.stack ? err.stack.split("\n").slice(0, 5).join("\n") : JSON.stringify(err, null, 2))));
+				log.err("CALL COMMAND", `An error occurred when calling the command ${commandName}", err);
+				return await message.reply(utils.getText({ lang: langCode, head: "handlerEvents" }, "errorOccurred", time, commandName, removeHomeDir(err.stack ? err.stack.split("\n").slice(0, 5).join("\n") : err.message.toString())));
 			}
 		}
 
@@ -356,7 +349,7 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
 								await handler();
 								log.info("onChat", `${commandName} | ${userData.name} | ${senderID} | ${threadID}`);
 							} catch (err) {
-								await message.reply(utils.getText({ lang: langCode, head: "handlerEvents" }, "errorOccurred2", time, commandName, removeHomeDir(err.stack ? err.stack.split("\n").slice(0, 5).join("\n") : JSON.stringify(err, null, 2))));
+								await message.reply(utils.getText({ lang: langCode, head: "handlerEvents" }, "errorOccurred2", time, commandName, removeHomeDir(err.stack ? err.stack.split("\n").slice(0, 5).join("\n") : err.message.toString())));
 							}
 						}
 					}).catch(err => log.err("onChat", `Error in ${commandName}`, err));
@@ -517,4 +510,47 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
 			typ
 		};
 	};
+
+	// Attach bridge to loader events so external event emissions run this handler
+	try {
+		const events = require('../../scripts/events/loader');
+		const handlerCheckData = require('./handlerCheckData');
+		if (!global.GoatBot) global.GoatBot = {};
+		if (!global.GoatBot._handlerEventsBridgeAttached) {
+			global.GoatBot._handlerEventsBridgeAttached = true;
+
+			events.register('message', async (payload) => {
+				try {
+					const { api: apiClient, event } = payload;
+					if (!event || !event.threadID) return;
+
+					try { await handlerCheckData(usersData, threadsData, event); } catch (err) { console.error('[handlerEvents bridge] handlerCheckData error', err); }
+
+					try {
+						const autoRefresh = (global.GoatBot?.config?.database?.autoRefreshThreadInfoFirstTime) === true;
+						if (autoRefresh && !global.db.receivedTheFirstMessage[event.threadID]) {
+							global.db.receivedTheFirstMessage[event.threadID] = true;
+							await threadsData.refreshInfo(event.threadID);
+						}
+					} catch (err) { console.error('[handlerEvents bridge] refreshInfo error', err); }
+
+					const messageWrapper = {
+						reply: async (text) => { try { if (apiClient && apiClient.sendMessage) await apiClient.sendMessage(text, event.threadID); } catch (e) { console.error('[handlerEvents bridge] reply error', e); } },
+						send: async (msg, cb) => { try { if (apiClient && apiClient.sendMessage) await apiClient.sendMessage(msg, event.threadID, cb); } catch (e) { console.error('[handlerEvents bridge] send error', e); } }
+					};
+
+					await handlerRunner(event, messageWrapper);
+				} catch (err) {
+					console.error('[handlerEvents bridge] unexpected error', err);
+				}
+			});
+
+			console.info('[handlerEvents] bridge attached to events loader');
+		}
+	} catch (err) {
+		console.error('[handlerEvents] failed to attach bridge to events loader', err);
+	}
+
+	// Return the runner so existing direct calls still work
+	return handlerRunner;
 };
