@@ -30,7 +30,7 @@ module.exports.onStart = async ({ api, event }) => {
         const totalMem = (usage.heapUsed / 1024 / 1024).toFixed(2);
         
         // ব্যাকগ্রাউন্ড ইমেজের পাথ (আপনার ইমেজটি বটের cache বা assets ফোল্ডারে 'bg.jpg' নামে রাখতে হবে)
-        const bgPath = path.join(__dirname, "cache", "bg.jpg");
+        const bgPath = path.join(__dirname, "cache", "bg.jpeg");
         
         // যদি ফোল্ডার না থাকে তৈরি করে নেওয়া এবং ইমেজ চেক করা
         if (!fs.existsSync(bgPath)) {
