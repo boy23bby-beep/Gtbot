@@ -39,9 +39,9 @@ module.exports.onStart = async ({ api, event, args, prefix }) => {
     }
 
     let text = `╔══════════════════╗\n║   ARIF BOT MENU   ║\n╚══════════════════╝\n\n`;
-    text += `Prefix: ${pfx} | Total: ${commands.size} commands\n\n`;
-    for (const [cat, cmds] of Object.entries(categories).sort()) {
-        text += `━━━ ${cat.toUpperCase()} ━━━\n`;
+    Total: ${commands.size} commands\n\n`;
+  //  for (const [cat, cmds] of Object.entries(categories).sort()) {
+        //text += `━━━ ${cat.toUpperCase()} ━━━\n`;
         text += cmds.map(n => `↪${n}`).join("\n") + "\n\n";
     }
     text += `Type ${pfx}help <command> for details.`;
