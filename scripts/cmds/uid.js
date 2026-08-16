@@ -5,15 +5,11 @@ module.exports = {
         author: "Ariful",
         countDown: 5,
         role: 0,
+        category: "boxchat"
         shortDescription: {
             en: "View UID and Dashboard using Canvas"
         },
-        longDescription: {
-            en: "Send UID and dashboard image using Canvas with custom font support"
-        },
-        guide: {
-            en: "{pn} [tag কেউকে] or reply to message"
-        }
+        
     },
     onStart: async function ({ api, event }) {
         const { threadID, senderID, mentions, messageReply } = event;
