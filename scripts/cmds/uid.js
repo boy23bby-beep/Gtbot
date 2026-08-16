@@ -5,7 +5,7 @@ module.exports = {
         author: "Ariful",
         countDown: 5,
         role: 0,
-        category: "boxchat"
+        category: "boxchat",
         shortDescription: {
             en: "View UID and Dashboard using Canvas"
         },
