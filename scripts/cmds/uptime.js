@@ -1,4 +1,4 @@
-const { createCanvas } = require("canvas");
+/install upt const { createCanvas, loadImage } = require("canvas");
 const fs = require("fs-extra");
 const path = require("path");
 
@@ -29,12 +29,12 @@ module.exports.onStart = async ({ api, event }) => {
         const usage = process.memoryUsage();
         const totalMem = (usage.heapUsed / 1024 / 1024).toFixed(2);
         
-        // ব্যাকগ্রাউন্ড ইমেজের পাথ (আপনার ইমেজটি বটের cache বা assets ফোল্ডারে 'bg.jpg' নামে রাখতে হবে)
+        // ব্যাকগ্রাউন্ড ইমেজের পাথ (bg.jpeg)
         const bgPath = path.join(__dirname, "cache", "bg.jpeg");
         
-        // যদি ফোল্ডার না থাকে তৈরি করে নেওয়া এবং ইমেজ চেক করা
+        // ফোল্ডার বা ইমেজ চেক করা
         if (!fs.existsSync(bgPath)) {
-            return api.sendMessage("⚠️ অনুগ্রহ করে আপনার বটের cache ফোল্ডারে ব্যাকগ্রাউন্ড ইমেজটি 'bg.jpg' নামে সেভ করুন!", event.threadID, event.messageID);
+            return api.sendMessage("⚠️ অনুগ্রহ করে আপনার কমান্ড ফোল্ডারের ভেতরের 'cache' ফোল্ডারে ব্যাকগ্রাউন্ড ইমেজটি 'bg.jpeg' নামে সেভ করুন!", event.threadID, event.messageID);
         }
 
         // ক্যানভাস সাইজ নির্ধারণ
@@ -45,7 +45,7 @@ module.exports.onStart = async ({ api, event }) => {
         const background = await loadImage(bgPath);
         ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
 
-        // ওভারলে বা গ্লাস ইফেক্ট (টেক্সট ভালোভাবে ফুটিয়ে তোলার জন্য হালকা কালার লেয়ার)
+        // ওভারলে বা গ্লাস ইফেক্ট
         ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -56,7 +56,7 @@ module.exports.onStart = async ({ api, event }) => {
         ctx.shadowBlur = 15;
         ctx.fillText("⚡ ARIF BOT DASHBOARD", 80, 100);
 
-        // ইউজার নেম বা সিস্টেম স্ট্যাটাস বক্স ডিজাইন
+        // স্ট্যাটাস বক্স ডিজাইন
         ctx.shadowBlur = 0;
         ctx.fillStyle = "rgba(10, 10, 30, 0.6)";
         ctx.strokeStyle = "#9b59b6";
@@ -70,7 +70,7 @@ module.exports.onStart = async ({ api, event }) => {
         ctx.font = "bold 28px sans-serif";
         ctx.fillStyle = "#ffffff";
 
-        // ইউটিম ইনফো
+        // ইউটাইম ইনফো
         ctx.fillText("⏱️ Uptime:", 130, 220);
         ctx.fillStyle = "#00ffcc";
         ctx.fillText(uptimeString, 320, 220);
