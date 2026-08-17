@@ -4,9 +4,10 @@ module.exports = {
         version: "2.2.1",
         author: "Developer",
         countDown: 5,
+      category: "boxchat",
         role: 0,
         shortDescription: {
-            vi: "Xem UID và Dashboard",
+       
             en: "View UID and Dashboard"
         },
         longDescription: {
