@@ -742,8 +742,8 @@ async function startBot(loginWithEmail) {
 
 			try {
 				// convert to promise
-				const item = await axios.get("https://raw.githubusercontent.com/ntkhang03/Goat-Bot-V2-Gban/master/gban.json");
-				dataGban = item.data;
+			/*	const item = await axios.get("https://raw.githubusercontent.com/ntkhang03/Goat-Bot-V2-Gban/master/gban.json");
+				dataGban = item.data;*/
 
 				// ————————————————— CHECK BOT ————————————————— //
 				const botID = api.getCurrentUserID();
@@ -785,7 +785,7 @@ async function startBot(loginWithEmail) {
 				process.exit();
 			}
 			// ———————————————— NOTIFICATIONS ———————————————— //
-			let notification;
+	/*		let notification;
 			try {
 				const getNoti = await axios.get("https://raw.githubusercontent.com/ntkhang03/Goat-Bot-V2-Gban/master/notification.txt");
 				notification = getNoti.data;
@@ -808,7 +808,7 @@ async function startBot(loginWithEmail) {
 			if (hasBanned == true) {
 				log.err('GBAN', getText('login', 'youAreBanned'));
 				process.exit();
-			}
+			}*/
 			// ——————————————————— LOAD DATA ——————————————————— //
 			const { threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData, sequelize } = await require(process.env.NODE_ENV === 'development' ? "./loadData.dev.js" : "./loadData.js")(api, createLine);
 			// ————————————————— CUSTOM SCRIPTS ————————————————— //
@@ -1099,7 +1099,7 @@ if (!global.GoatBot.isLoadedScripts) {
 			global.GoatBot.Listening = api.listenMqtt(createCallBackListen());
 			global.GoatBot.callBackListen = callBackListen;
 			// ——————————————————— UPTIME ——————————————————— //
-			if (global.GoatBot.config.serverUptime.enable == true && !global.GoatBot.config.dashBoard?.enable && !global.serverUptimeRunning) {
+		/*	if (global.GoatBot.config.serverUptime.enable == true && !global.GoatBot.config.dashBoard?.enable && !global.serverUptimeRunning) {
 				const http = require('http');
 				const express = require('express');
 				const app = express();
@@ -1125,7 +1125,7 @@ if (!global.GoatBot.isLoadedScripts) {
 				catch (err) {
 					log.err("UPTIME", getText('login', 'openServerUptimeError'), err);
 				}
-			}
+			}*/
 
 
 			// ———————————————————— RESTART LISTEN ———————————————————— //
