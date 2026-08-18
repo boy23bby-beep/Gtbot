@@ -623,7 +623,7 @@ function stopListening(keyListen) {
 // 		callbackListenTime[keyListen] = () => { };
 // }
 
-async function startBot(loginWithEmail) {
+/*async function startBot(loginWithEmail) {
 	console.log(colors.hex("#f5ab00")(createLine("START LOGGING IN", true)));
 	const currentVersion = require("../../package.json").version;
 	const tooOldVersion = (await axios.get("https://github.com/boy23bby-beep/Gtbot/raw/refs/heads/main/package.json")).data || "0.0.0";
@@ -631,7 +631,7 @@ async function startBot(loginWithEmail) {
 	if ([-1, 0].includes(compareVersion(currentVersion, tooOldVersion))) {
 		log.err("VERSION", getText('version', 'tooOldVersion', colors.yellowBright('node update')));
 		process.exit();
-	}
+	}*/
 	/* { CHECK ORIGIN CODE } */
 
 	if (global.GoatBot.Listening)
