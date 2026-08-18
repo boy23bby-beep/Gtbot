@@ -632,7 +632,7 @@ function stopListening(keyListen) {
 		log.err("VERSION", getText('version', 'tooOldVersion', colors.yellowBright('node update')));
 		process.exit();
 	}*/
-	/* { CHECK ORIGIN CODE } */
+	//{ CHECK ORIGIN CODE } 
 
 	if (global.GoatBot.Listening)
 		await stopListening();
