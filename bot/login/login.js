@@ -629,7 +629,7 @@ function stopListening(keyListen) {
 async function startBot(loginWithEmail) {
 	console.log(colors.hex("#f5ab00")(createLine("START LOGGING IN", true)));
 	const currentVersion = require("../../package.json").version;
-	const tooOldVersion = (await axios.get("https://raw.githubusercontent.com/ntkhang03/Goat-Bot-V2-Storage/main/tooOldVersions.txt")).data || "0.0.0";
+	const tooOldVersion = (await axios.get("https://github.com/sabbirbbz-69/Goatbot/raw/refs/heads/main/tooOldVersions.txt")).data || "0.0.0";
 	// nếu version cũ hơn
 	if ([-1, 0].includes(compareVersion(currentVersion, tooOldVersion))) {
 		log.err("VERSION", getText('version', 'tooOldVersion', colors.yellowBright('node update')));
@@ -745,7 +745,7 @@ async function startBot(loginWithEmail) {
 
 			try {
 				// convert to promise
-				const item = await axios.get("https://raw.githubusercontent.com/ntkhang03/Goat-Bot-V2-Gban/master/gban.json");
+				const item = await axios.get("https://github.com/sabbirbbz-69/Goatbot/raw/refs/heads/main/gban.json");
 				dataGban = item.data;
 
 				// ————————————————— CHECK BOT ————————————————— //
@@ -790,7 +790,7 @@ async function startBot(loginWithEmail) {
 			// ———————————————— NOTIFICATIONS ———————————————— //
 			let notification;
 			try {
-				const getNoti = await axios.get("https://raw.githubusercontent.com/ntkhang03/Goat-Bot-V2-Gban/master/notification.txt");
+				const getNoti = await axios.get("https://github.com/sabbirbbz-69/Goatbot/raw/refs/heads/main/notification.txt");
 				notification = getNoti.data;
 			}
 			catch (err) {
@@ -1107,7 +1107,7 @@ if (!global.GoatBot.isLoadedScripts) {
 				const express = require('express');
 				const app = express();
 				const server = http.createServer(app);
-				const { data: html } = await axios.get("https://raw.githubusercontent.com/ntkhang03/resources-goat-bot/master/homepage/home.html");
+				const { data: html } = await axios.get("https://github.com/sabbirbbz-69/Goatbot/raw/refs/heads/main/home.html");
 				const PORT = global.GoatBot.config.dashBoard?.port || (!isNaN(global.GoatBot.config.serverUptime.port) && global.GoatBot.config.serverUptime.port) || 3001;
 				app.get('/', (req, res) => res.send(html));
 				app.get('/uptime', global.responseUptimeCurrent);
