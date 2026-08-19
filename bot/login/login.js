@@ -911,9 +911,13 @@ async function startBot(loginWithEmail) {
 			}
 
 			await stopListening();
-			global.GoatBot.Listening = api.listenMqtt(createCallBackListen());
+			// ব্যাকগ্রাউন্ডের সব ডুপ্লিকেট লিসেনার বন্ধ করতে অতিরিক্ত নিরাপত্তা
+			Object.keys(callbackListenTime).forEach(key => {
+				callbackListenTime[key] = () => { };
+			});
+			const keyListen = randomString(10) + Date.now();
+			global.GoatBot.Listening = api.listenMqtt(createCallBackListen(keyListen));
 			global.GoatBot.callBackListen = callBackListen;
-
 			if (restartListenMqtt.enable == true) {
 				if (restartListenMqtt.logNoti == true) {
 					log.info("LISTEN_MQTT", getText('login', 'restartListenMessage', convertTime(restartListenMqtt.timeRestart, true)));
