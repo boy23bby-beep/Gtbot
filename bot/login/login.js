@@ -68,7 +68,8 @@ function centerText(text, length) {
 const titles =[ 
 	[ "it's a goat bot" ],
 	[ "don't change credit" ],
-	[ "Goat bot v3"]
+	[ "Goat bot v3"],
+	[ " ARIF BOT" ]
 ];
 const maxWidth = process.stdout.columns;
 const title = maxWidth > 58 ?
