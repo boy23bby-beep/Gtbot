@@ -65,25 +65,7 @@ function centerText(text, length) {
 }
 
 // logo
-const titles = [
-	[
-		"██████╗  ██████╗  █████╗ ████████╗    ██╗   ██╗██████╗",
-		"██╔════╝ ██╔═══██╗██╔══██╗╚══██╔══╝    ██║   ██║╚════██╗",
-		"██║  ███╗██║   ██║███████║   ██║       ██║   ██║ █████╔╝",
-		"██║   ██║██║   ██║██╔══██║   ██║       ╚██╗ ██╔╝██╔═══╝",
-		"╚██████╔╝╚██████╔╝██║  ██║   ██║        ╚████╔╝ ███████╗",
-		"╚═════╝  ╚═════╝ ╚═╝  ╚═╝   ╚═╝         ╚═══╝  ╚══════╝"
-	],
-	[
-		"█▀▀ █▀█ ▄▀█ ▀█▀  █▄▄ █▀█ ▀█▀  █░█ ▀█",
-		"█▄█ █▄█ █▀█ ░█░  █▄█ █▄█ ░█░  ▀▄▀ █▄"
-	],
-	[
-		"G O A T B O T  V 2 @" + currentVersion
-	],
-	[
-		""
-	]
+const titles =[ "it's a goat bot"
 ];
 const maxWidth = process.stdout.columns;
 const title = maxWidth > 58 ?
@@ -1178,4 +1160,4 @@ if (!global.GoatBot.isLoadedScripts) {
 
 global.GoatBot.reLoginBot = startBot;
 startBot();
-Eikhane ntg khan er lin
+
