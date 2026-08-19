@@ -66,8 +66,8 @@ function centerText(text, length) {
 
 // logo
 const titles =[ 
-	[ "it's a goat bot" ]
-	[ "don't change credit" ]
+	[ "it's a goat bot" ],
+	[ "don't change credit" ],
 	[ "Goat bot v3"]
 ];
 const maxWidth = process.stdout.columns;
