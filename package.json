@@ -1,6 +1,6 @@
 {
   "name": "ARIF BOT",
-  "version": "1.0.1",
+  "version": "4.0.1",
   "description": "this is my personal bot.",
   "main": "index.js",
   "engines": {
