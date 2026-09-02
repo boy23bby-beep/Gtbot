@@ -63,8 +63,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "NODE_ENV=development node index.js",
-    "prod": "NODE_ENV=production node index.js",
-    "postinstall": "node patch-fca.js"
+    "prod": "NODE_ENV=production node index.js"
   },
   "author": "ARIF",
   "license": "MIT",
