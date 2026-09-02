@@ -12,6 +12,14 @@ module.exports = (api, threadModel, userModel, dashBoardModel, globalModel, user
 	return async function (event) {
 		const message = createFuncMessage(api, event);
 
+		if (!event.mentions) {
+			event.mentions = {};
+		}
+		if (event.participantMentions && Array.isArray(event.participantMentions)) {
+			for (let m of event.participantMentions) {
+				event.mentions[m.id] = m.tag || "User";
+			}
+		}
 		console.log("Message received from:", event.senderID, "Content:", event.body);
 
 		await handlerCheckDB(usersData, threadsData, event);
