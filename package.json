@@ -37,6 +37,7 @@
     "jsonlint-mod": "^1.7.6",
     "leven": "^3.1.0",
     "moment-timezone": "^0.5.48",
+    "mime-db": "^1.54.0",
     "mongoose": "^6.13.9",
     "mqtt": "^4.3.8",
     "node-cron": "^3.0.3",
